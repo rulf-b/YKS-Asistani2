@@ -1,0 +1,10 @@
+# Gizli dosyalar
+.env
+google-credentials.json
+
+# Python cache dosyaları
+__pycache__/
+*.pyc
+
+# Veritabanı dosyası
+veritabani.db

@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2 class="mb-4 text-primary"><i class="bi bi-clock-fill me-2"></i> Çalışma Oturumu Takibi</h2>
+    <p class="text-muted mb-4">Ne kadar ve hangi konu üzerinde çalıştığını kaydederek ilerlemeni takip et!</p>
+
+    <div class="card shadow-sm p-4 mb-5">
+        <h5 class="mb-4 text-muted"><i class="bi bi-plus-circle me-2"></i> Yeni Çalışma Oturumu Ekle</h5>
+        <form method="POST" action="" novalidate>
+            <div class="mb-3">
+                <label for="calisma_suresi" class="form-label fw-bold">Çalışma Süresi (Dakika):</label>
+                <input type="number" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('calisma_suresi') %}is-invalid{% endif %}" name="calisma_suresi" id="calisma_suresi" placeholder="Örn: 60" required min="1">
+                <div class="invalid-feedback">
+                    Lütfen geçerli bir çalışma süresi (dakika olarak, pozitif bir sayı) girin.
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="konu_adi" class="form-label fw-bold">Çalışılan Konu (İsteğe Bağlı):</label>
+                <input type="text" class="form-control" name="konu_adi" id="konu_adi" placeholder="Örn: Matematik > Türev > Limit">
+            </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save me-2"></i> Oturumu Kaydet</button>
+            </div>
+        </form>
+    </div>
+
+    <hr class="my-5">
+
+    <h2 class="mt-4 text-primary"><i class="bi bi-journal-text me-2"></i> Geçmiş Çalışma Oturumların</h2>
+    {% if gecmis_oturumlar %}
+    <div class="table-responsive card shadow-sm p-3">
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Tarih</th>
+                    <th>Süre (Dakika)</th>
+                    <th>Konu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for oturum in gecmis_oturumlar %}
+                <tr>
+                    <td>{{ oturum.tarih.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>{{ oturum.calisma_suresi_dakika }}</td>
+                    <td>{{ oturum.konu_adi if oturum.konu_adi else 'Belirtilmedi' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-center text-muted mt-4 p-4 card shadow-sm">Henüz kaydedilmiş bir çalışma oturumu bulunmuyor. İlk oturumunu hemen ekle!</p>
+    {% endif %}
+{% endblock content %}

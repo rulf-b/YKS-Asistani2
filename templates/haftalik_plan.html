@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="text-center">
+        <h2 class="mb-3 text-primary"><i class="bi bi-calendar2-week me-2"></i> Kişiselleştirilmiş Haftalık Planın</h2>
+        <p class="lead text-muted mb-5">Son verilerine göre yapay zekâ tarafından oluşturulan 7 günlük yol haritan aşağıdadır.</p>
+        <form method="POST" action="">
+            <button type="submit" class="btn btn-success btn-lg my-4"><i class="bi bi-magic me-2"></i> Yeni ve Güncel Bir Plan Oluştur</button>
+        </form>
+    </div>
+
+    <hr class="my-5">
+
+    {% if plan %}
+        <div class="mt-4">
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold bg-primary text-white">
+                    🚀 İşte Bu Haftaki Görevlerin!
+                </div>
+                <div class="card-body" style="white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.8; color: var(--text-dark);">
+                    {{ plan }}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info mt-4 p-4 card shadow-sm">
+            <i class="bi bi-info-circle-fill me-2"></i> Henüz bir plan oluşturulmadı. Yukarıdaki butona tıklayarak ilk planını oluştur!
+        </div>
+    {% endif %}
+{% endblock content %}

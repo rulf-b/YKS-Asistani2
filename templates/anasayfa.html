@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <div class="px-4 py-5 text-center">
+        <h1 class="display-5 fw-bold">Merhaba, {{ current_user.username }}! 👋</h1>
+        <div class="col-lg-8 mx-auto">
+            <p class="lead mb-4 text-muted">YKS Asistanı panona hoş geldin. Hedeflerine bir adım daha yaklaşmak için bugün ne yapmak istersin?</p>
+            {% if current_user.hedef %}
+                <div class="alert alert-success" role="alert">
+                    <h4 class="alert-heading"><i class="bi bi-bullseye me-2"></i> Hedefin:</h4>
+                    <p class="mb-0 fs-5"><strong>{{ current_user.hedef.universite }} - {{ current_user.hedef.bolum }}</strong></p>
+                    <hr>
+                    <a href="{{ url_for('hedef_analizi') }}" class="btn btn-success"><i class="bi bi-graph-up-arrow me-2"></i> Detaylı Hedef Analizimi Görüntüle</a>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i> Henüz bir hedefin yok!</h4>
+                    <p>Motivasyonunu artırmak ve yol haritanı çizmek için hemen bir hedef belirle.</p>
+                    <a href="{{ url_for('hedef_belirle') }}" class="btn btn-warning"><i class="bi bi-pin-map-fill me-2"></i> Hemen Hedef Belirle</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-primary"><i class="bi bi-search me-2"></i> Son Soru Analizlerin</h5>
+                    {% if analizler %}
+                        <ul class="list-group list-group-flush border-0">
+                            {% for analiz in analizler %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
+                                    <span class="text-truncate">{{ analiz.soru_metni[:60] }}...</span> 
+                                    <small class="text-muted ms-auto">({{ analiz.tarih.strftime('%d %b') }})</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="card-text text-muted">Henüz analiz edilmiş soru yok. Hemen bir tane dene!</p>
+                    {% endif %}
+                    <a href="{{ url_for('soru_analizi') }}" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Yeni Soru Analizi Yap</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-primary"><i class="bi bi-bar-chart-line-fill me-2"></i> Son Denemelerin</h5>
+                    {% if denemeler %}
+                        <ul class="list-group list-group-flush border-0">
+                            {% for deneme in denemeler %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
+                                    <span class="text-truncate">{{ deneme.kaynak }}</span> 
+                                    <small class="text-muted ms-auto">({{ deneme.tarih.strftime('%d %b') }})</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="card-text text-muted">Henüz kaydedilmiş deneme yok. İlk denemeni ekle!</p>
+                    {% endif %}
+                     <a href="{{ url_for('deneme_takibi') }}" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Yeni Deneme Ekle</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-primary"><i class="bi bi-clock-fill me-2"></i> Son Çalışma Oturumların</h5>
+                    {% if calisma_oturumleri %}
+                        <ul class="list-group list-group-flush border-0">
+                            {% for oturum in calisma_oturumleri %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
+                                    <span class="text-truncate">{{ oturum.konu_adi if oturum.konu_adi else 'Belirtilmedi' }} ({{ oturum.calisma_suresi_dakika }} dk)</span> 
+                                    <small class="text-muted ms-auto">({{ oturum.tarih.strftime('%d %b') }})</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="card-text text-muted">Henüz kaydedilmiş bir çalışma oturumu yok. İlk oturumunu ekle!</p>
+                    {% endif %}
+                    <a href="{{ url_for('calisma_takibi') }}" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Çalışma Oturumu Ekle</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+             <div class="card h-100 shadow-sm text-center">
+                <div class="card-body d-flex flex-column justify-content-center">
+                     <h5 class="card-title text-warning mb-3"><i class="bi bi-lightbulb-fill me-2"></i> Eksiklerini Gider</h5>
+                     <p class="card-text fs-6 text-muted mb-4">Bilgi eksikliği yaşadığın **{{tekrar_konu_sayisi}}** konu tekrar listende seni bekliyor. Hemen bir quiz çözerek kendini test et ve eksiklerini kapat!</p>
+                     <a href="{{ url_for('mini_quiz') }}" class="btn btn-warning btn-lg mt-auto"><i class="bi bi-card-checklist me-2"></i> Mini Quiz Başlat</a>
+                </div>
+             </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <h2 class="text-center mb-4 text-primary"><i class="bi bi-bullseye me-2"></i> Hedefini Belirle veya Güncelle</h2>
+        <p class="text-center text-muted mb-5">YÖK Atlas gibi kaynaklardan faydalanarak hedefine ilişkin tahmini verileri gir. Bu, yol haritanı çizmemize yardımcı olacak.</p>
+        <form method="POST" action="" class="p-5 card shadow-sm" novalidate> {# novalidate eklendi, böylece Bootstrap/JS doğrulamayı biz yönetiriz #}
+            <h5 class="mb-4 text-muted"><i class="bi bi-mortarboard-fill me-2"></i>Hedef Bilgileri</h5>
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <label for="universite" class="form-label fw-bold">Hedef Üniversite:</label>
+                    <input type="text" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('universite') %}is-invalid{% endif %}" name="universite" value="{{ hedef.universite if hedef else request.form.get('universite', '') }}" placeholder="Örn: Boğaziçi Üniversitesi" required>
+                    <div class="invalid-feedback">
+                        Lütfen hedef üniversite adını girin.
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <label for="bolum" class="form-label fw-bold">Hedef Bölüm:</label>
+                    <input type="text" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('bolum') %}is-invalid{% endif %}" name="bolum" value="{{ hedef.bolum if hedef else request.form.get('bolum', '') }}" placeholder="Örn: Bilgisayar Mühendisliği" required>
+                    <div class="invalid-feedback">
+                        Lütfen hedef bölüm adını girin.
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                 <div class="col-md-4 mb-4">
+                    <label for="hedef_siralama" class="form-label fw-bold">Hedef Sıralama:</label>
+                    <input type="number" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('hedef_siralama') %}is-invalid{% endif %}" name="hedef_siralama" value="{{ hedef.hedef_siralama if hedef else request.form.get('hedef_siralama', '') }}" placeholder="Örn: 15000" required>
+                    <div class="invalid-feedback">
+                        Lütfen hedef sıralamanızı girin.
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <label for="hedef_tyt_net" class="form-label fw-bold">Tahmini TYT Neti:</label>
+                    <input type="number" step="0.25" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('hedef_tyt_net') %}is-invalid{% endif %}" name="hedef_tyt_net" value="{{ hedef.hedef_tyt_net if hedef else request.form.get('hedef_tyt_net', '') }}" placeholder="Örn: 95.5" required>
+                    <div class="invalid-feedback">
+                        Lütfen tahmini TYT netinizi girin.
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <label for="hedef_ayt_net" class="form-label fw-bold">Tahmini AYT Neti:</label>
+                    <input type="number" step="0.25" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('hedef_ayt_net') %}is-invalid{% endif %}" name="hedef_ayt_net" value="{{ hedef.hedef_ayt_net if hedef else request.form.get('hedef_ayt_net', '') }}" placeholder="Örn: 68.75" required>
+                    <div class="invalid-feedback">
+                        Lütfen tahmini AYT netinizi girin.
+                    </div>
+                </div>
+            </div>
+            
+            <h5 class="mb-4 mt-4 text-muted"><i class="bi bi-person-fill me-2"></i>Sana Özel Bilgiler</h5>
+            <div class="mb-4">
+                <label for="ders_tercihi" class="form-label fw-bold">Alan Tercihi (Sayısal/Sözel/Eşit Ağırlık):</label>
+                <select class="form-select {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('ders_tercihi') %}is-invalid{% endif %}" id="ders_tercihi" name="ders_tercihi" required>
+                    <option value="" {% if not current_user.ders_tercihi and not request.form.get('ders_tercihi') %}selected{% endif %} disabled>Seçiniz...</option>
+                    <option value="Sayısal" {% if current_user.ders_tercihi == 'Sayısal' or request.form.get('ders_tercihi') == 'Sayısal' %}selected{% endif %}>Sayısal</option>
+                    <option value="Sözel" {% if current_user.ders_tercihi == 'Sözel' or request.form.get('ders_tercihi') == 'Sözel' %}selected{% endif %}>Sözel</option>
+                    <option value="Eşit Ağırlık" {% if current_user.ders_tercihi == 'Eşit Ağırlık' or request.form.get('ders_tercihi') == 'Eşit Ağırlık' %}selected{% endif %}>Eşit Ağırlık</option>
+                </select>
+                <div class="invalid-feedback">
+                    Lütfen alan tercihinizi seçin.
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <label class="form-label fw-bold d-block mb-3"><i class="bi bi-calendar-check me-2"></i>Boş Zaman Dilimlerin (Planlama İçin Önemli):</label>
+                <p class="text-muted small mb-3">Hangi günlerin hangi zaman dilimlerinde genellikle boş olursun? (Birden fazla seçilebilir)</p>
+                {% set gunler = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"] %}
+                {% set zamanlar = ["Sabah (08:00-12:00)", "Öğle (12:00-17:00)", "Akşam (17:00-22:00)", "Gece (22:00-02:00)"] %}
+                
+                <div class="row g-2">
+                    {% for gun in gunler %}
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="card p-3 mb-2 rounded-3" style="background-color: var(--secondary-light); border: 1px solid var(--border-color);">
+                            <p class="fw-bold mb-2">{{ gun }}:</p>
+                            {% for zaman in zamanlar %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="bos_zaman_{{ gun }}[]" value="{{ zaman }}" id="check-{{ gun }}-{{ loop.index }}"
+                                {% if mevcut_bos_zamanlar[gun] is defined and zaman in mevcut_bos_zamanlar[gun] %}checked{% endif %}>
+                                <label class="form-check-label" for="check-{{ gun }}-{{ loop.index }}">
+                                    {{ zaman }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-grid mt-3">
+                <button type="submit" class="btn btn-primary btn-lg">Hedefimi ve Bilgilerimi Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2 class="text-primary mb-4"><i class="bi bi-patch-question-fill me-2"></i> Mini Quiz: Eksiklerini Gider!</h2>
+    <p class="text-muted mb-3">Geçmişte "Bilgi Eksikliği" olarak belirlenen konularından rastgele bir quiz oluşturuldu.</p>
+    <p class="text-muted mb-4"><strong>Quiz Konuları:</strong> <span class="fw-bold text-dark">{{ konular|join(', ') }}</span></p>
+    
+    <div class="mb-5 text-center">
+        <a href="{{ url_for('mini_quiz') }}" class="btn btn-primary btn-lg"><i class="bi bi-arrow-clockwise me-2"></i> Farklı Konulardan Yeni Quiz Oluştur</a>
+    </div>
+
+    <hr class="my-5">
+    
+    <div class="quiz-icerigi card shadow-sm p-4" style="white-space: pre-wrap; background-color: var(--card-bg); font-family: 'Inter', sans-serif; line-height: 1.8;">
+        {{ quiz_icerigi|markdown }}
+    </div>
+{% endblock content %}

@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-5">
+                <h2 class="card-title text-center mb-4 text-primary"><i class="bi bi-person-plus-fill me-2"></i> Hesap Oluştur</h2>
+                <form method="POST" action="" novalidate>
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Kullanıcı Adı</label>
+                        <input type="text" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('username') %}is-invalid{% endif %}" id="username" name="username" value="{{ request.form.get('username', '') }}" required>
+                        <div class="invalid-feedback">
+                            Lütfen bir kullanıcı adı girin.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Şifre</label>
+                        <input type="password" class="form-control {% if get_flashed_messages(category_filter=['danger']) %}is-invalid{% endif %}" id="password" name="password" required>
+                        <div class="invalid-feedback">
+                            Lütfen bir şifre belirleyin.
+                        </div>
+                    </div>
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">Kayıt Ol</button>
+                    </div>
+                </form>
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        Zaten bir hesabın var mı? <a href="{{ url_for('login') }}" class="text-decoration-none text-primary fw-medium">Giriş Yap</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - YKS Koçu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* CSS Değişkenleri (Renk Paleti) */
+        :root {
+            --primary-soft: #6c7cd2; /* Daha yumuşak bir ana renk */
+            --primary-dark: #4a59a7; /* Hover için daha koyu ton */
+            --secondary-light: #e6e9f0; /* Açık gri tonları */
+            --text-dark: #333;
+            --text-light: #555;
+            --bg-light: #f8faff; /* Çok hafif mavi/gri arka plan */
+            --card-bg: #ffffff;
+            --border-color: #e0e4eb;
+            --success-soft: #28a745; /* Varsayılan Bootstrap yeşili, yumuşak kullanılabilir */
+            --danger-soft: #dc3545; /* Varsayılan Bootstrap kırmızısı */
+            --warning-soft: #ffc107; /* Varsayılan Bootstrap sarısı */
+            --info-soft: #17a2b8; /* Varsayılan Bootstrap mavimsi yeşil */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif; /* Gövde metni için Inter */
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif; /* Başlıklar için Poppins */
+            color: var(--text-dark);
+            font-weight: 600; /* Biraz daha kalın başlıklar */
+            margin-bottom: 1.5rem; /* Başlıklar arası boşluk */
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        /* Navbar Stili */
+        .navbar {
+            background-color: var(--primary-soft) !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Yumuşak gölge */
+            border-bottom: 1px solid var(--primary-dark);
+            padding: 1rem 0; /* Navbar yüksekliğini ayarla */
+        }
+        .navbar-brand {
+            font-weight: 700; /* Daha belirgin marka adı */
+            font-size: 1.6rem;
+            color: #fff !important;
+        }
+        .navbar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            transition: color 0.3s ease, transform 0.2s ease;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #fff !important;
+            transform: translateY(-2px); /* Hafif yukarı çıkma efekti */
+        }
+        .navbar-nav .nav-link.active {
+            color: #fff !important;
+            border-bottom: 2px solid #fff;
+        }
+        .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+
+        /* Kart Stilleri */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px; /* Daha yuvarlak köşeler */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.07); /* Daha soft bir gölge */
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak geçiş */
+            border: none; /* Kenarlık kaldırma */
+        }
+        .card:hover {
+            transform: translateY(-8px); /* Hafif yukarı kalkma */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important; /* Daha belirgin gölge */
+        }
+        .card-header {
+            background-color: var(--secondary-light);
+            border-bottom: 1px solid var(--border-color);
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            font-size: 1.1rem;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Buton Stilleri */
+        .btn {
+            border-radius: 8px; /* Daha yuvarlak butonlar */
+            padding: 0.8rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: var(--primary-soft);
+            border-color: var(--primary-soft);
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(108, 124, 210, 0.4);
+        }
+        .btn-outline-primary {
+            color: var(--primary-soft);
+            border-color: var(--primary-soft);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--primary-soft);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(108, 124, 210, 0.4);
+        }
+        /* Diğer renkli butonlar için de benzer soft stiller uygulanabilir */
+        .btn-success { background-color: var(--success-soft); border-color: var(--success-soft); }
+        .btn-success:hover { background-color: darken(var(--success-soft), 5%); border-color: darken(var(--success-soft), 5%); box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4); }
+        .btn-warning { background-color: var(--warning-soft); border-color: var(--warning-soft); }
+        .btn-warning:hover { background-color: darken(var(--warning-soft), 5%); border-color: darken(var(--warning-soft), 5%); box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4); }
+
+        /* Form Kontrolleri */
+        .form-control {
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            padding: 0.8rem 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: var(--primary-soft);
+            box-shadow: 0 0 0 0.25rem rgba(108, 124, 210, 0.25);
+            outline: 0;
+        }
+
+        /* Flash Mesajları (Alerts) */
+        .alert {
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin-top: 1rem;
+            margin-bottom: 2rem; /* Daha fazla boşluk */
+            font-weight: 500;
+        }
+        .alert-success { background-color: rgba(40, 167, 69, 0.1); color: var(--success-soft); border-color: var(--success-soft); }
+        .alert-danger { background-color: rgba(220, 53, 69, 0.1); color: var(--danger-soft); border-color: var(--danger-soft); }
+        .alert-warning { background-color: rgba(255, 193, 7, 0.1); color: var(--warning-soft); border-color: var(--warning-soft); }
+        .alert-info { background-color: rgba(23, 162, 184, 0.1); color: var(--info-soft); border-color: var(--info-soft); }
+
+
+        /* Genel Boşluklar */
+        .container {
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+        }
+        .mb-4 { margin-bottom: 2rem !important; } /* Varsayılan Bootstrap'ten biraz daha fazla */
+        .my-4 { margin-top: 2rem !important; margin-bottom: 2rem !important; }
+
+        /* Icon büyüklüğü ve rengi (istek üzerine eklendi) */
+        .bi {
+            vertical-align: -0.125em; /* Metinle daha iyi hizalama */
+            font-size: 1.1em; /* İkonları biraz daha büyük yap */
+            margin-right: 0.3em; /* Metinle arasına boşluk */
+        }
+        .navbar-brand .bi { margin-right: 0.5em; }
+
+        /* darken fonksiyonu CSS'te doğrudan çalışmaz, elle tonları belirledik */
+        /* Bu yüzden yukarıdaki btn-success:hover gibi yerlerde darken yazısını elle değiştirdim */
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('anasayfa') }}"><i class="bi bi-robot"></i> YKS Asistanı</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('anasayfa') }}">Ana Sayfa</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('soru_analizi') }}">Soru Analizi</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('deneme_takibi') }}">Deneme Takibi</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('hedef_belirle') }}">Hedef Belirle</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('mini_quiz') }}">Mini Quiz</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('haftalik_plan') }}">Haftalık Plan</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('calisma_takibi') }}">Çalışma Takibi</a></li> {# Yeni eklenen link #}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('ai_feedback') }}">AI Geri Bildirim</a></li> {# Yeni eklenen link #}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                         <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i> Merhaba, {{ current_user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                {% if current_user.is_admin %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-shield-lock-fill"></i> Admin Paneli</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Çıkış Yap</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Giriş Yap</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Kayıt Ol</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock content %}
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

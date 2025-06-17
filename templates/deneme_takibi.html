@@ -1,0 +1,208 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2 class="mb-4 text-primary"><i class="bi bi-graph-up me-2"></i> Net Gelişim Grafiğin (TYT Toplam)</h2>
+    {% if denemeler and denemeler|length > 1 %}
+        <div class="mb-4 card shadow-sm p-4">
+            <canvas id="netGrafik"></canvas>
+        </div>
+        <div class="text-center mb-5">
+            <a href="{{ url_for('performans_yorumu') }}" class="btn btn-success btn-lg"><i class="bi bi-robot me-2"></i> Performansımı Yorumla</a>
+        </div>
+    {% else %}
+        <p class="alert alert-info mt-4 p-4 card shadow-sm"><i class="bi bi-info-circle-fill me-2"></i> Grafik ve yapay zekâ yorumu için en az 2 deneme sonucu girmelisiniz.</p>
+    {% endif %}
+    
+    <hr class="my-5">
+
+    <div class="accordion mb-5" id="denemeEkleAccordion">
+        <div class="accordion-item card shadow-sm rounded-3">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed fw-bold rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    <i class="bi bi-plus-circle-fill me-2"></i> Yeni Deneme Sınavı Sonucu Ekle
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#denemeEkleAccordion">
+                <div class="accordion-body">
+                    <form method="POST" action="">
+                        <div class="mb-4">
+                            <label for="kaynak" class="form-label fw-bold">Deneme Kaynağı (Yayın Adı):</label>
+                            <input type="text" class="form-control" id="kaynak" name="kaynak" placeholder="Örn: 3D Yayınları" required>
+                        </div>
+                        <h5 class="mb-3 text-muted">TYT Dersleri</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3 col-6"><label class="form-label">Türkçe</label><input type="number" class="form-control" name="tyt_turkce_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="tyt_turkce_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Sosyal B.</label><input type="number" class="form-control" name="tyt_sosyal_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="tyt_sosyal_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Temel Mat.</label><input type="number" class="form-control" name="tyt_mat_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="tyt_mat_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Fen B.</label><input type="number" class="form-control" name="tyt_fen_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="tyt_fen_y" placeholder="Yanlış" value="0"></div>
+                        </div>
+                        <h5 class="mb-3 text-muted">AYT Dersleri <small class="text-muted">(Sadece girdiğin alanları doldur)</small></h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3 col-6"><label class="form-label">AYT Mat.</label><input type="number" class="form-control" name="ayt_mat_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_mat_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Fizik</label><input type="number" class="form-control" name="ayt_fiz_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_fiz_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Kimya</label><input type="number" class="form-control" name="ayt_kim_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_kim_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Biyoloji</label><input type="number" class="form-control" name="ayt_biy_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_biy_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Edebiyat</label><input type="number" class="form-control" name="ayt_edebiyat_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_edebiyat_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Tarih-1</label><input type="number" class="form-control" name="ayt_tarih1_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_tarih1_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Coğrafya-1</label><input type="number" class="form-control" name="ayt_cografya1_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_cografya1_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Tarih-2</label><input type="number" class="form-control" name="ayt_tarih2_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_tarih2_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Coğrafya-2</label><input type="number" class="form-control" name="ayt_cografya2_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_cografya2_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Felsefe Gr.</label><input type="number" class="form-control" name="ayt_felsefe_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_felsefe_y" placeholder="Yanlış" value="0"></div>
+                            <div class="col-md-3 col-6"><label class="form-label">Din Kültürü</label><input type="number" class="form-control" name="ayt_din_d" placeholder="Doğru" value="0"><input type="number" class="form-control mt-1" name="ayt_din_y" placeholder="Yanlış" value="0"></div>
+                        </div>
+                        <div class="d-grid mt-4">
+                             <button type="submit" class="btn btn-primary btn-lg">Denemeyi Kaydet</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="mt-4 text-primary"><i class="bi bi-table me-2"></i> Geçmiş Denemelerim</h2>
+    {% if denemeler %}
+    <div class="table-responsive card shadow-sm p-3">
+        <table class="table table-striped table-hover table-bordered align-middle text-center" style="font-size: 13px;">
+            <thead class="table-dark">
+                <tr>
+                    <th rowspan="2">Kaynak</th><th rowspan="2">Tarih</th><th rowspan="2">TYT Net</th><th colspan="3">AYT Toplam Net</th><th colspan="4">AYT-EA/SÖZ</th><th colspan="4">AYT-SAY</th><th colspan="4">AYT-SÖZ 2</th>
+                </tr>
+                <tr>
+                    <th>SAY</th><th>EA</th><th>SÖZ</th><th>Edb.</th><th>Tar-1</th><th>Coğ-1</th><th>Mat</th><th>Fiz</th><th>Kim</th><th>Biyo</th><th>Tar-2</th><th>Coğ-2</th><th>Fel.</th><th>Din</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for deneme in denemeler %}
+            <tr>
+                <td>{{ deneme.kaynak }}</td>
+                <td>{{ deneme.tarih.strftime('%d-%m-%Y') }}</td>
+                <td><b>{{ "%.2f"|format((deneme.tyt_turkce_d-deneme.tyt_turkce_y/4)+(deneme.tyt_sosyal_d-deneme.tyt_sosyal_y/4)+(deneme.tyt_mat_d-deneme.tyt_mat_y/4)+(deneme.tyt_fen_d-deneme.tyt_fen_y/4)) }}</b></td>
+                <td><b>{{ "%.2f"|format((deneme.ayt_mat_d-deneme.ayt_mat_y/4)+(deneme.ayt_fiz_d-deneme.ayt_fiz_y/4)+(deneme.ayt_kim_d-deneme.ayt_kim_y/4)+(deneme.ayt_biy_d-deneme.ayt_biy_y/4)) }}</b></td>
+                <td><b>{{ "%.2f"|format((deneme.ayt_edebiyat_d-deneme.ayt_edebiyat_y/4)+(deneme.ayt_tarih1_d-deneme.ayt_tarih1_y/4)+(deneme.ayt_cografya1_d-deneme.ayt_cografya1_y/4)+(deneme.ayt_mat_d-deneme.ayt_mat_y/4)) }}</b></td>
+                <td><b>{{ "%.2f"|format((deneme.ayt_edebiyat_d-deneme.ayt_edebiyat_y/4)+(deneme.ayt_tarih1_d-deneme.ayt_tarih1_y/4)+(deneme.ayt_cografya1_d-deneme.ayt_cografya1_y/4)+(deneme.ayt_tarih2_d-deneme.ayt_tarih2_y/4)+(deneme.ayt_cografya2_d-deneme.ayt_cografya2_y/4)+(deneme.ayt_felsefe_d-deneme.ayt_felsefe_y/4)+(deneme.ayt_din_d-deneme.ayt_din_y/4)) }}</b></td>
+                <td>{{ "%.2f"|format(deneme.ayt_edebiyat_d-deneme.ayt_edebiyat_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_tarih1_d-deneme.ayt_tarih1_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_cografya1_d-deneme.ayt_cografya1_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_mat_d-deneme.ayt_mat_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_fiz_d-deneme.ayt_fiz_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_kim_d-deneme.ayt_kim_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_biy_d-deneme.ayt_biy_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_tarih2_d-deneme.ayt_tarih2_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_cografya2_d-deneme.ayt_cografya2_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_felsefe_d-deneme.ayt_felsefe_y/4) }}</td>
+                <td>{{ "%.2f"|format(deneme.ayt_din_d-deneme.ayt_din_y/4) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-center text-muted mt-4 p-4 card shadow-sm">Henüz kaydedilmiş bir deneme sonucu bulunmuyor. Hemen ilk denemeni ekle!</p>
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        {% if denemeler and denemeler|length > 1 %}
+            const etiketler = {{ grafik_etiketler|safe }};
+            const veriler = {{ grafik_veriler|safe }};
+            const ctx = document.getElementById('netGrafik');
+            new Chart(ctx, { 
+                type: 'line', 
+                data: { 
+                    labels: etiketler, 
+                    datasets: [{ 
+                        label: 'Toplam TYT Neti', 
+                        data: veriler, 
+                        fill: false, 
+                        borderColor: 'var(--primary-soft)', /* Renk paleti ile uyumlu */
+                        tension: 0.3, /* Daha yumuşak çizgi */
+                        pointBackgroundColor: 'var(--primary-dark)', /* Nokta rengi */
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: 'var(--primary-dark)',
+                        pointHoverBorderColor: 'var(--primary-soft)',
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }] 
+                }, 
+                options: { 
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Inter',
+                                    size: 14
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' Net';
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Inter',
+                                size: 14
+                            },
+                            titleFont: {
+                                family: 'Poppins',
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: { 
+                        y: { 
+                            beginAtZero: false,
+                            grid: {
+                                color: 'var(--border-color)', /* Izgara çizgisi rengi */
+                                borderDash: [2, 2] /* Kesikli çizgi */
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: 'var(--text-light)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'TYT Toplam Neti',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: 'bold',
+                                    size: 16
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'var(--border-color)',
+                                borderDash: [2, 2]
+                            },
+                             ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: 'var(--text-light)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Deneme Tarihi',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: 'bold',
+                                    size: 16
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        }
+                    } 
+                } 
+            });
+        {% endif %}
+    </script>
+{% endblock content %}

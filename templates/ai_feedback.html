@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2 class="mb-4 text-primary"><i class="bi bi-robot me-2"></i> Yapay Zeka Geri Bildirimi</h2>
+    <p class="text-muted mb-5">Deneme sonuçlarına, soru analizlerine ve çalışma alışkanlıklarına göre hazırlanmış kişiselleştirilmiş raporun aşağıdadır.</p>
+
+    <div class="card shadow-sm p-4"> {# Buradaki p-4 kartın iç boşluğunu ayarlar #}
+        <div class="card-body" style="white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.8; color: var(--text-dark);">
+            {{ feedback_report|markdown }}
+        </div>
+    </div>
+
+    <div class="mt-5 text-center">
+        <a href="{{ url_for('anasayfa') }}" class="btn btn-outline-secondary btn-lg"><i class="bi bi-arrow-left me-2"></i> Panoya Geri Dön</a>
+    </div>
+{% endblock content %}
