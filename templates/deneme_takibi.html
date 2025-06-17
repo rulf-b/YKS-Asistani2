@@ -3,11 +3,24 @@
     <h2 class="mb-4 text-primary"><i class="bi bi-graph-up me-2"></i> Net Gelişim Grafiğin (TYT Toplam)</h2>
     {% if denemeler and denemeler|length > 1 %}
         <div class="mb-4 card shadow-sm p-4">
-            <canvas id="netGrafik"></canvas>
+            <canvas id="tytNetGrafik"></canvas> {# id tytNetGrafik olarak değiştirildi #}
         </div>
         <div class="text-center mb-5">
             <a href="{{ url_for('performans_yorumu') }}" class="btn btn-success btn-lg"><i class="bi bi-robot me-2"></i> Performansımı Yorumla</a>
         </div>
+
+        {# YENİ: AYT Toplam Net Grafiği #}
+        <h2 class="mb-4 text-primary mt-5"><i class="bi bi-graph-up me-2"></i> Net Gelişim Grafiğin (AYT Toplam)</h2>
+        <div class="mb-4 card shadow-sm p-4">
+            <canvas id="aytNetGrafik"></canvas>
+        </div>
+
+        {# YENİ: Ders Bazlı Net Grafiği (Örnek: TYT Türkçe ve TYT Matematik) #}
+        <h2 class="mb-4 text-primary mt-5"><i class="bi bi-bar-chart-line me-2"></i> Ders Bazlı Net Gelişimi (Son 5 Deneme)</h2>
+        <div class="mb-4 card shadow-sm p-4">
+            <canvas id="dersBazliNetGrafik"></canvas>
+        </div>
+
     {% else %}
         <p class="alert alert-info mt-4 p-4 card shadow-sm"><i class="bi bi-info-circle-fill me-2"></i> Grafik ve yapay zekâ yorumu için en az 2 deneme sonucu girmelisiniz.</p>
     {% endif %}
@@ -103,19 +116,95 @@
     <script>
         {% if denemeler and denemeler|length > 1 %}
             const etiketler = {{ grafik_etiketler|safe }};
-            const veriler = {{ grafik_veriler|safe }};
-            const ctx = document.getElementById('netGrafik');
-            new Chart(ctx, { 
+            const tyt_veriler = {{ grafik_veriler|safe }};
+
+            // YENİ: AYT ve Ders Bazlı veriler için hesaplamalar
+            const ayt_mat_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_mat_d - d.ayt_mat_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_fiz_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_fiz_d - d.ayt_fiz_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_kim_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_kim_d - d.ayt_kim_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_biy_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_biy_d - d.ayt_biy_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_edebiyat_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_edebiyat_d - d.ayt_edebiyat_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_tarih1_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_tarih1_d - d.ayt_tarih1_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_cografya1_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_cografya1_d - d.ayt_cografya1_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_tarih2_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_tarih2_d - d.ayt_tarih2_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_cografya2_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_cografya2_d - d.ayt_cografya2_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_felsefe_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_felsefe_d - d.ayt_felsefe_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_din_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ (d.ayt_din_d - d.ayt_din_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+
+            const ayt_toplam_say_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ ((d.ayt_mat_d-d.ayt_mat_y/4)+(d.ayt_fiz_d-d.ayt_fiz_y/4)+(d.ayt_kim_d-d.ayt_kim_y/4)+(d.ayt_biy_d-d.ayt_biy_y/4)) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_toplam_ea_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ ((d.ayt_edebiyat_d-d.ayt_edebiyat_y/4)+(d.ayt_tarih1_d-d.ayt_tarih1_y/4)+(d.ayt_cografya1_d-d.ayt_cografya1_y/4)+(d.ayt_mat_d-d.ayt_mat_y/4)) | round(2) }},
+                {% endfor %}
+            ];
+            const ayt_toplam_soz_veriler = [
+                {% for d in denemeler_grafik_icin %}
+                    {{ ((d.ayt_edebiyat_d-d.ayt_edebiyat_y/4)+(d.ayt_tarih1_d-d.ayt_tarih1_y/4)+(d.ayt_cografya1_d-d.ayt_cografya1_y/4)+(d.ayt_tarih2_d-d.ayt_tarih2_y/4)+(d.ayt_cografya2_d-d.ayt_cografya2_y/4)+(d.ayt_felsefe_d-d.ayt_felsefe_y/4)+(d.ayt_din_d-d.ayt_din_y/4)) | round(2) }},
+                {% endfor %}
+            ];
+
+
+            // TYT Net Grafiği (Mevcut grafik)
+            const tytCtx = document.getElementById('tytNetGrafik');
+            new Chart(tytCtx, { 
                 type: 'line', 
                 data: { 
                     labels: etiketler, 
                     datasets: [{ 
                         label: 'Toplam TYT Neti', 
-                        data: veriler, 
+                        data: tyt_veriler, 
                         fill: false, 
-                        borderColor: 'var(--primary-soft)', /* Renk paleti ile uyumlu */
-                        tension: 0.3, /* Daha yumuşak çizgi */
-                        pointBackgroundColor: 'var(--primary-dark)', /* Nokta rengi */
+                        borderColor: 'var(--primary-soft)', 
+                        tension: 0.3, 
+                        pointBackgroundColor: 'var(--primary-dark)',
                         pointBorderColor: '#fff',
                         pointHoverBackgroundColor: 'var(--primary-dark)',
                         pointHoverBorderColor: 'var(--primary-soft)',
@@ -158,8 +247,8 @@
                         y: { 
                             beginAtZero: false,
                             grid: {
-                                color: 'var(--border-color)', /* Izgara çizgisi rengi */
-                                borderDash: [2, 2] /* Kesikli çizgi */
+                                color: 'var(--border-color)',
+                                borderDash: [2, 2]
                             },
                             ticks: {
                                 font: {
@@ -202,6 +291,276 @@
                         }
                     } 
                 } 
+            });
+
+            // YENİ: AYT Toplam Net Grafiği
+            const aytCtx = document.getElementById('aytNetGrafik');
+            new Chart(aytCtx, {
+                type: 'line',
+                data: {
+                    labels: etiketler,
+                    datasets: [
+                        {
+                            label: 'AYT Sayısal Toplam Neti',
+                            data: ayt_toplam_say_veriler,
+                            fill: false,
+                            borderColor: 'var(--success-soft)',
+                            tension: 0.3,
+                            pointBackgroundColor: 'var(--success-soft)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: 'var(--success-soft)',
+                            pointHoverBorderColor: 'var(--success-soft)',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        },
+                        {
+                            label: 'AYT Eşit Ağırlık Toplam Neti',
+                            data: ayt_toplam_ea_veriler,
+                            fill: false,
+                            borderColor: 'var(--warning-soft)',
+                            tension: 0.3,
+                            pointBackgroundColor: 'var(--warning-soft)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: 'var(--warning-soft)',
+                            pointHoverBorderColor: 'var(--warning-soft)',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        },
+                        {
+                            label: 'AYT Sözel Toplam Neti',
+                            data: ayt_toplam_soz_veriler,
+                            fill: false,
+                            borderColor: 'var(--info-soft)',
+                            tension: 0.3,
+                            pointBackgroundColor: 'var(--info-soft)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: 'var(--info-soft)',
+                            pointHoverBorderColor: 'var(--info-soft)',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Inter',
+                                    size: 14
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' Net';
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Inter',
+                                size: 14
+                            },
+                            titleFont: {
+                                family: 'Poppins',
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'var(--border-color)',
+                                borderDash: [2, 2]
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: 'var(--text-light)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'AYT Toplam Neti',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: 'bold',
+                                    size: 16
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'var(--border-color)',
+                                borderDash: [2, 2]
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: 'var(--text-light)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Deneme Tarihi',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: 'bold',
+                                    size: 16
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // YENİ: Ders Bazlı Net Grafiği (Son 5 Deneme veya mevcut olanlar)
+            const dersBazliCtx = document.getElementById('dersBazliNetGrafik');
+            const recentLabels = etiketler.slice(-5); // Son 5 denemenin etiketleri
+            const recent_tyt_turkce = [
+                {% for d in denemeler_grafik_icin[-5:] %}
+                    {{ (d.tyt_turkce_d - d.tyt_turkce_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const recent_tyt_mat = [
+                {% for d in denemeler_grafik_icin[-5:] %}
+                    {{ (d.tyt_mat_d - d.tyt_mat_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const recent_ayt_mat = [
+                {% for d in denemeler_grafik_icin[-5:] %}
+                    {{ (d.ayt_mat_d - d.ayt_mat_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            const recent_ayt_edebiyat = [
+                {% for d in denemeler_grafik_icin[-5:] %}
+                    {{ (d.ayt_edebiyat_d - d.ayt_edebiyat_y / 4) | round(2) }},
+                {% endfor %}
+            ];
+            
+            new Chart(dersBazliCtx, {
+                type: 'line',
+                data: {
+                    labels: recentLabels,
+                    datasets: [
+                        {
+                            label: 'TYT Türkçe',
+                            data: recent_tyt_turkce,
+                            fill: false,
+                            borderColor: '#007bff', // Bootstrap Primary
+                            tension: 0.3
+                        },
+                        {
+                            label: 'TYT Matematik',
+                            data: recent_tyt_mat,
+                            fill: false,
+                            borderColor: '#28a745', // Bootstrap Success
+                            tension: 0.3
+                        },
+                        {
+                            label: 'AYT Matematik',
+                            data: recent_ayt_mat,
+                            fill: false,
+                            borderColor: '#ffc107', // Bootstrap Warning
+                            tension: 0.3
+                        },
+                        {
+                            label: 'AYT Edebiyat',
+                            data: recent_ayt_edebiyat,
+                            fill: false,
+                            borderColor: '#17a2b8', // Bootstrap Info
+                            tension: 0.3
+                        }
+                        // Diğer dersleri de buraya ekleyebilirsiniz
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: 'Inter',
+                                    size: 14
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + ' Net';
+                                }
+                            },
+                            bodyFont: {
+                                family: 'Inter',
+                                size: 14
+                            },
+                            titleFont: {
+                                family: 'Poppins',
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            grid: {
+                                color: 'var(--border-color)',
+                                borderDash: [2, 2]
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: 'var(--text-light)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Net Değeri',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: 'bold',
+                                    size: 16
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'var(--border-color)',
+                                borderDash: [2, 2]
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter'
+                                },
+                                color: 'var(--text-light)'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Deneme Tarihi',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: 'bold',
+                                    size: 16
+                                },
+                                color: 'var(--text-dark)'
+                            }
+                        }
+                    }
+                }
             });
         {% endif %}
     </script>
