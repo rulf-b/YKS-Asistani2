@@ -18,6 +18,9 @@ from flask_mail import Mail, Message
 from itsdangerous import TimedSerializer as Serializer, URLSafeTimedSerializer # URLSafeTimedSerializer eklendi
 from flask import current_app # current_app import edildi
 from forms import LoginForm
+from prompts import YKS_ANALIZ_PROMPT, AI_FEEDBACK_PROMPT, PERFORMANS_YORUM_PROMPT, HEDEF_ANALIZI_PROMPT, MINI_QUIZ_PROMPT, MINI_QUIZ_ANALIZ_PROMPT
+import signal
+import sys
 
 # --- UYGULAMA KURULUMU ---
 app = Flask(__name__)
@@ -197,30 +200,7 @@ def get_gemini_analysis(soru_metni=None, soru_resmi=None, ogrenci_cevabi=""):
     
     # Prompt'u daha net hale getirelim ve istemediğimiz çıktıları belirtelim
     # BÖLÜM 1 ve BÖLÜM 2 ayrımını ve '---' işaretini koruyarak sadece istenen Markdown'ı almasını isteyelim
-    prompt = f"""
-    Sen bir YKS yapay zekâ koçusun. Analizini iki bölüm halinde yapacaksın.
-    BÖLÜM 1: VERİ BLOKU (Kullanıcıya gösterilmeyecek - Makine tarafından okunacak)
-    [KONU]: [Sorunun ait olduğu ders, konu ve **alt başlığı** "Ders > Konu > Alt Başlık" formatında belirt. Örn: "Matematik > Fonksiyonlar > Bileşke Fonksiyon"]
-    [ZORLUK_DERECESI]: [Sorunun zorluğunu tahmin et: Kolay/Orta/Zor]
-    [HATA_TURU]: [Öğrencinin düşünce zincirindeki hatayı tespit et. Hatayı **daha spesifik** bir şekilde belirt (örn: "Bilgi Eksikliği - Türev Kuralları", "İşlem Hatası - Negatif Sayı İşlemi", "Dikkat Dağınağıklığı - Soru Kökünü Yanlış Okuma", "Yanlış Anlama - Kavramsal Hata").]
-    ---
-    BÖLÜM 2: KULLANICIYA GÖSTERİLECEK ANALİZ (Sadece ve sadece Markdown formatında metin olarak, HTML etiketleri veya kod blokları içermesin)
-    ### 📚 Konu ve Zorluk Analizi
-    * **Ders ve Konu:** [Tespit ettiğin konuyu "Ders > Konu > Alt Başlık" formatında buraya tekrar yaz]
-    * **Zorluk Derecesi:** [Kolay/Orta/Zor]
-    ### 🤔 Hata Analizi
-    * **Hata Türü:** [Tespit ettiğin spesifik hata türünü buraya tekrar yaz]
-    * **Açıklama:** Hatayı kısaca açıkla ve bu hatanın genellikle neden yapıldığını belirt.
-    ### 💡 Çözüm Yolu ve Geri Bildirim
-    * **Doğru Çözüm:** Sorunun doğru çözümünü adım adım göster. Her adımı net bir şekilde açıkla.
-    * **Kişisel Tavsiye:** Öğrenciye hatasını gidermesi için **hata türüne özel** ve motive edici bir tavsiye yaz. (Örn: "Bilgi Eksikliği" ise "Bu konunun temelini sağlamlaştırmak için X kaynağını tekrar gözden geçir.", "İşlem Hatası" ise "Daha dikkatli olmak için bol bol pratik yapmalısın." gibi.)
-    ### 🎬 Tavsiye Edilen Kaynaklar
-    * **Önemli:** Doğrudan video linki VERME. Bunun yerine, öğrencinin YouTube'da aratabileceği 2-3 adet spesifik **arama sorgusu** öner. (Örn: "Parçalı fonksiyonlar konu anlatımı YKS", "Türev kuralları örnek çözümleri")
-    ---
-    Öğrencinin Cevabı ve Düşüncesi:**
-{ogrenci_cevabi}
----
-"""
+    prompt = YKS_ANALIZ_PROMPT.format(ogrenci_cevabi=ogrenci_cevabi)
     
     content_parts = [prompt]
     if soru_resmi:
@@ -348,18 +328,7 @@ Bu verileri tamamladığınızda, sana özel ve çok daha detaylı bir performan
             veri_ozeti += f"- {c.tarih.strftime('%d-%m-%Y %H:%M')}: {c.calisma_suresi_dakika} dk, Konu: {c.konu_adi or 'Belirtilmedi'}\n"
 
     # Prompt oluştur (sizin prompt yapınızı kullanarak, ancak veri_ozeti'ni daha zengin hale getirdik)
-    prompt = f"""
-Sen bir YKS koçusun. Aşağıdaki öğrenci verilerine göre, kişiye özel bir geri bildirim raporu hazırla.
-* Motivasyon verici ama dürüst bir dil kullan.
-* 3 ana bölüm oluştur: 
-1. Genel Durum Değerlendirmesi,
-2. Gelişim Alanları ve Öneriler,
-3. Kapanış Notu.
-Rapor sadece Markdown formatında olsun, başka hiçbir metin veya HTML etiketi ekleme.
-
-Veriler:
-{veri_ozeti}
-"""
+    prompt = AI_FEEDBACK_PROMPT.format(veri_ozeti=veri_ozeti)
 
     # Gemini çağrısı
     try:
@@ -653,7 +622,7 @@ def performans_yorumu():
     for deneme in denemeler:
         toplam_net = (deneme.tyt_turkce_d-deneme.tyt_turkce_y/4)+(deneme.tyt_sosyal_d-deneme.tyt_sosyal_y/4)+(deneme.tyt_mat_d-deneme.tyt_mat_y/4)+(deneme.tyt_fen_d-deneme.tyt_fen_y/4)
         performans_ozeti += f"- {deneme.tarih.strftime('%d-%m-%Y')}, {deneme.kaynak}: Toplam TYT Net: {toplam_net:.2f}\n"
-    prompt = f"Bir YKS öğrencisinin deneme performansı: {performans_ozeti}. Bu performansı bir koç gibi yorumla."
+    prompt = PERFORMANS_YORUM_PROMPT.format(performans_ozeti=performans_ozeti)
     model = genai.GenerativeModel('gemini-1.5-flash-latest')
     try:
         response = model.generate_content(prompt)
@@ -756,33 +725,16 @@ def hedef_analizi():
         user_data_for_ai += f"Kullanıcının Belirttiği Boş Zaman Dilimleri: {current_user.bos_zamanlar_json}\n"
 
 
-    prompt = f"""
-    Sen uzman bir YKS rehber öğretmenisin. Bir öğrencinin hedefini, son deneme sonucunu ve genel profilini kullanarak, **hedefe ulaşma yolundaki ilerlemesini, mevcut güçlü ve zayıf yönlerini, hedefine olan net ve sıralama farklarını detaylı bir şekilde analiz et.**
-
-    Analizini aşağıdaki Markdown formatında, motive edici ama gerçekçi bir dille hazırlamanı istiyorum. Rapor sadece belirtilen başlıkları ve içeriği içermeli, başka hiçbir metin veya kod bloğu içermemeli.
-
-    ### 🎯 Genel Durum ve Hedefe Yakınlık
-    * [Burada genel durumu, hedefe ne kadar yakın olduğunu, sıralama hedefine göre mevcut durumunu değerlendir.]
-    * **Net Farkları:**
-        * TYT Hedef: {hedef.hedef_tyt_net} net, Mevcut: {mevcut_tyt_net:.2f} net (Fark: {hedef.hedef_tyt_net - mevcut_tyt_net:.2f})
-        * AYT Hedef: {hedef.hedef_ayt_net} net, Mevcut: {mevcut_ayt_net:.2f} net (Fark: {hedef.hedef_ayt_net - mevcut_ayt_net:.2f})
-    * **Sıralama Hedefi:** Yaklaşık {hedef.hedef_siralama}. sıraya girmeyi hedefliyorsun.
-
-    ### 🚀 İlerleme ve Geliştirilmesi Gereken Alanlar
-    * [Mevcut netlerin ve ders tercihin ışığında hangi derslere/konulara daha çok ağırlık vermen gerektiğini, hangi alanlarda (örn: TYT mi AYT mi) daha çok çalışman gerektiğini belirt.]
-    * [Varsa, son deneme analizlerinden elde edilen verilere dayanarak (Örn: "Matematik'te fonksiyonlar konusunda işlem hataları yaşıyorsun.") spesifik öneriler sun.]
-
-    ### 💡 Stratejik Tavsiyeler ve Yol Haritası
-    * [Net farklarını kapatmak için somut, haftalık/günlük çalışma stratejileri öner. (Örn: "Her gün X kadar paragraf, Y kadar problem çöz.") ]
-    * [Ders tercihini (Sayısal/Sözel/EA) ve belirlediğin boş zaman dilimlerini dikkate alarak ders dağılımı konusunda tavsiyelerde bulun.]
-    * [Motivasyonunu yüksek tutmak için pratik öneriler (mola, uyku vb.) ekle.]
-
-    ### ⚠️ Unutma!
-    [Buraya YKS sıralamalarının her yıl değişebileceğini, OBP etkisini ve istikrarlı çalışmanın önemini belirten kısa, motive edici bir not ekle.]
-
-    Öğrenci Verileri:
-    {user_data_for_ai}
-    """
+    prompt = HEDEF_ANALIZI_PROMPT.format(
+        hedef_tyt_net=hedef.hedef_tyt_net,
+        mevcut_tyt_net=mevcut_tyt_net,
+        tyt_fark=hedef.hedef_tyt_net - mevcut_tyt_net,
+        hedef_ayt_net=hedef.hedef_ayt_net,
+        mevcut_ayt_net=mevcut_ayt_net,
+        ayt_fark=hedef.hedef_ayt_net - mevcut_ayt_net,
+        hedef_siralama=hedef.hedef_siralama,
+        user_data_for_ai=user_data_for_ai
+    )
     model = genai.GenerativeModel('gemini-1.5-flash-latest')
     try:
         response = model.generate_content(prompt)
@@ -834,30 +786,12 @@ def mini_quiz():
         konular_for_ai = secilen_konular_formdan if secilen_konular_formdan else konu_havuzu[:3] # Eğer formdan gelmezse tekrar listesinden 3 tane al
         konular_for_ai_str = ", ".join(konular_for_ai)
 
-        prompt = f"""
-        Sen bir YKS soru hazırlama uzmanısın. Aşağıdaki konulardan, her birinden en az bir tane olacak şekilde, toplam 5 adet çoktan seçmeli (A, B, C, D, E) test sorusu hazırla.
-        Soruların formatı şu şekilde olmalı:
-        **Soru [Soru Numarası]:** [Sorunun Metni]
-        A) [Şık A]
-        B) [Şık B]
-        C) [Şık C]
-        D) [Şık D]
-        E) [Şık E]
-
-        Soruların zorluk seviyesi genel olarak "{quiz_zorluk}" olsun.
-        Cevap anahtarını en sonda, `### CEVAP ANAHTARI ###` başlığı altında şu formatta ver:
-        [Soru Numarası]. [Doğru Şık]
-        Örnek:
-        1. A
-        2. B
-        ...
-
-        Her sorunun ait olduğu konuyu (Ders > Konu > Alt Konu formatında) ve zorluk derecesini ayrıca her sorunun hemen üstüne şu formatta belirt:
-        [KONU: Matematik > Türev > Limit, ZORLUK: Orta]
-
-        Quiz Konuları:
-        - {konular_for_ai_str}
-        """
+        prompt = MINI_QUIZ_PROMPT.format(
+            quiz_zorluk=quiz_zorluk,
+            konu="{konu}",
+            zorluk="{zorluk}",
+            konular_for_ai_str=konular_for_ai_str
+        )
         
         try:
             model = genai.GenerativeModel('gemini-1.5-flash-latest')
@@ -983,19 +917,13 @@ def mini_quiz():
 
         db.session.commit()
 
-        ai_analiz_prompt = f\"\"\"
-        Sen bir YKS quiz değerlendirme uzmanısın. Bir öğrencinin mini quiz sonuçlarını ve yanlış cevapladığı soruların detaylarını vereceğim.
-        Aşağıdaki formata göre detaylı bir geri bildirim ve analiz yapmanı istiyorum:
-        ### 📊 Quiz Sonuç Özeti
-        * Toplam Soru Sayısı: {len(kullanici_cevaplari)}
-        * Doğru Cevap Sayısı: {dogru_cevap_sayisi}
-        * Yanlış Cevap Sayısı: {yanlis_cevap_sayisi}
-        * Boş Bırakılan Soru Sayısı: {bos_cevap_sayisi}
-        ### 🤔 Hata Analizi ve Gelişim Alanları
-        Yanlış cevaplanan soruların detayları:
-        {json.dumps(cevaplanan_sorular_listesi, ensure_ascii=False, indent=2)}
-        (...)
-        \"\"\"
+        ai_analiz_prompt = MINI_QUIZ_ANALIZ_PROMPT.format(
+            toplam_soru=len(kullanici_cevaplari),
+            dogru_cevap_sayisi=dogru_cevap_sayisi,
+            yanlis_cevap_sayisi=yanlis_cevap_sayisi,
+            bos_cevap_sayisi=bos_cevap_sayisi,
+            cevaplanan_sorular_listesi=json.dumps(cevaplanan_sorular_listesi, ensure_ascii=False, indent=2)
+        )
         try:
             model = genai.GenerativeModel('gemini-1.5-flash-latest')
             response = model.generate_content(ai_analiz_prompt)
@@ -1203,7 +1131,14 @@ def reset_token(token):
 
 
 # --- UYGULAMAYI ÇALIŞTIR ---
+def signal_handler(sig, frame):
+    print('Uygulama kapatılıyor...')
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

@@ -1,10 +1,46 @@
-# Gizli dosyalar
-.env
-google-credentials.json
-
-# Python cache dosyaları
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Veritabanı dosyası
-veritabani.db
+# Virtual Environment
+venv/
+ENV/
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Local configuration
+instance/
+.env
+
+# Uploads
+uploads/*
+!uploads/.gitkeep 

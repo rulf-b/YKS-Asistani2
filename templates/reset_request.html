@@ -6,13 +6,19 @@
             <div class="card-body p-5">
                 <h2 class="card-title text-center mb-4 text-primary"><i class="bi bi-question-circle-fill me-2"></i> Şifremi Sıfırla</h2>
                 <p class="text-muted text-center mb-4">Şifrenizi sıfırlamak için lütfen e-posta adresinizi girin.</p>
+                
+                {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                
+                {% if success %}
+                <div class="alert alert-success">{{ success }}</div>
+                {% endif %}
+                
                 <form method="POST" action="" novalidate>
                     <div class="mb-3">
-                        <label for="email" class="form-label">E-posta</label>
-                        <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" id="email" name="email" value="{{ form.email.data or '' }}" required>
-                        <div class="invalid-feedback">
-                            {% for error in form.email.errors %}{{ error }}{% endfor %}
-                        </div>
+                        <label for="email" class="form-label">E-posta Adresi</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
                     </div>
                     <div class="d-grid mt-4">
                         <button type="submit" class="btn btn-primary btn-lg">Şifremi Sıfırlama İsteği Gönder</button>

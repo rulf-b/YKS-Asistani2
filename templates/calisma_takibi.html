@@ -3,12 +3,30 @@
     <h2 class="mb-4 text-primary"><i class="bi bi-clock-fill me-2"></i> Çalışma Oturumu Takibi</h2>
     <p class="text-muted mb-4">Ne kadar ve hangi konu üzerinde çalıştığını kaydederek ilerlemeni takip et!</p>
 
+    {# Başarı Mesajı #}
+    {% if success_message %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert" data-show-toast="true">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        {{ success_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {# Hata Mesajı #}
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <div class="card shadow-sm p-4 mb-5">
         <h5 class="mb-4 text-muted"><i class="bi bi-plus-circle me-2"></i> Yeni Çalışma Oturumu Ekle</h5>
         <form method="POST" action="" novalidate>
             <div class="mb-3">
                 <label for="calisma_suresi" class="form-label fw-bold">Çalışma Süresi (Dakika):</label>
-                <input type="number" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('calisma_suresi') %}is-invalid{% endif %}" name="calisma_suresi" id="calisma_suresi" placeholder="Örn: 60" required min="1">
+                <input type="number" class="form-control" name="calisma_suresi" id="calisma_suresi" placeholder="Örn: 60" required min="1">
                 <div class="invalid-feedback">
                     Lütfen geçerli bir çalışma süresi (dakika olarak, pozitif bir sayı) girin.
                 </div>
