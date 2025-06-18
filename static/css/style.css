@@ -1,0 +1,16 @@
+/* Custom global styles */
+:root[data-theme="dark"] {
+    --bg-light: #181a1b;
+    --card-bg: #212427;
+    --text-dark: #f1f1f1;
+    --secondary-light: #2d3135;
+    --border-color: #3a3f44;
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-in forwards;
+    opacity: 0;
+}
+@keyframes fadeIn {
+    to { opacity: 1; }
+} 

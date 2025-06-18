@@ -6,23 +6,50 @@
             <div class="card-body p-5">
                 <h2 class="card-title text-center mb-4 text-primary"><i class="bi bi-key-fill me-2"></i> Yeni Şifre Belirle</h2>
                 <p class="text-muted text-center mb-4">Lütfen yeni şifrenizi girin.</p>
+                
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-clock me-2"></i>
+                    <strong>Önemli:</strong> Bu link 30 dakika geçerlidir. Hızlıca şifrenizi değiştirin.
+                </div>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
                 <form method="POST" action="" novalidate>
+                    {{ form.hidden_tag() }}
                     <div class="mb-3">
-                        <label for="password" class="form-label">Yeni Şifre</label>
-                        <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}" id="password" name="password" required>
-                        <div class="invalid-feedback">
-                            {% for error in form.password.errors %}{{ error }}{% endfor %}
-                        </div>
+                        {{ form.password.label(class="form-label") }}
+                        {% if form.password.errors %}
+                            {{ form.password(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.password.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.password(class="form-control") }}
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="password2" class="form-label">Yeni Şifre Tekrar</label>
-                        <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" id="password2" name="password2" required>
-                        <div class="invalid-feedback">
-                            {% for error in form.password2.errors %}{{ error }}{% endfor %}
-                        </div>
+                        {{ form.password2.label(class="form-label") }}
+                        {% if form.password2.errors %}
+                            {{ form.password2(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.password2.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.password2(class="form-control") }}
+                        {% endif %}
                     </div>
                     <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-success btn-lg">Şifreyi Sıfırla</button>
+                        {{ form.submit(class="btn btn-success btn-lg") }}
                     </div>
                 </form>
             </div>

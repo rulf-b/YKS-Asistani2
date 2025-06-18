@@ -10,6 +10,12 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <script defer src="/static/js/theme.js"></script>
     <style>
         /* CSS Değişkenleri (Renk Paleti) */
         :root {
@@ -199,13 +205,13 @@
 
         /* Liste Öğesi Vurgulama (Anasayfa için) */
         .list-group-item {
-            transition: all 0.2s ease-in-out;
-            border-radius: 8px; /* Daha yuvarlak köşeler */
+            transition: all 0.3s ease;
+            border: none;
+            background-color: transparent;
         }
         .list-group-item:hover {
             background-color: var(--secondary-light);
             transform: translateX(5px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         }
 
         /* Akordeon Başlık Efektleri */
@@ -250,42 +256,37 @@
             border-left: 5px solid var(--success-soft);
         }
 
-        /* Sayfa Yükleme Animasyonu (Spinner Overlay) */
+        /* Loading Overlay */
         #loadingOverlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.8); /* Yarı şeffaf beyaz */
-            display: flex;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: none;
             justify-content: center;
             align-items: center;
-            z-index: 9999; /* Diğer her şeyin üzerinde */
-            visibility: hidden; /* Varsayılan olarak gizli */
-            opacity: 0;
-            transition: visibility 0.3s linear, opacity 0.3s linear; /* Yumuşak geçiş */
+            z-index: 9999;
         }
 
         #loadingOverlay.show {
-            visibility: visible;
-            opacity: 1;
+            display: flex;
         }
 
-        .spinner-border {
-            width: 3rem; /* Büyük spinner */
+        #loadingOverlay .spinner-border {
+            width: 3rem;
             height: 3rem;
-            color: var(--primary-dark); /* Ana renk ile uyumlu */
+            color: var(--primary-soft);
         }
 
-        /* Hoş Geldin Animasyonu */
+        /* Fade-in animasyonu */
         .animate-fade-in {
+            animation: fadeIn 0.6s ease-in-out forwards;
             opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInAndSlideUp 0.8s ease-out forwards;
         }
 
-        @keyframes fadeInAndSlideUp {
+        @keyframes fadeIn {
             from {
                 opacity: 0;
                 transform: translateY(20px);
@@ -360,6 +361,32 @@
                 white-space: nowrap; /* Hücre içeriğinin tek satırda kalmasını sağlar */
             }
         }
+
+        /* Başa Dön Butonu */
+        #backToTop {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: var(--primary-soft);
+            color: #fff;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1040;
+        }
+
+        #backToTop.show {
+            display: flex;
+        }
+
+        #backToTop:hover {
+            background-color: var(--primary-dark);
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -385,61 +412,45 @@
         </div>
     </div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="{{ url_for('anasayfa') }}"><i class="bi bi-robot"></i> YKS Asistanı</a>
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/"><i class="bi bi-mortarboard"></i> YKS Asistanı</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('anasayfa') }}">Ana Sayfa</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('soru_analizi') }}">Soru Analizi</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('deneme_takibi') }}">Deneme Takibi</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('hedef_belirle') }}">Hedef Belirle</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('mini_quiz') }}">Mini Quiz</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('haftalik_plan') }}">Haftalık Plan</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('calisma_takibi') }}">Çalışma Takibi</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('ai_feedback') }}">AI Geri Bildirim</a></li>
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav ms-auto">
-                    {% if current_user.is_authenticated %}
-                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle"></i> Merhaba, {{ current_user.username }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                {% if current_user.is_admin %}
-                                <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}"><i class="bi bi-shield-lock-fill"></i> Admin Paneli</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                {% endif %}
-                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Çıkış Yap</a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Giriş Yap</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Kayıt Ol</a></li>
-                    {% endif %}
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="/">Ana Sayfa</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/soru-analizi">Soru Analizi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/deneme_takibi">Deneme Takibi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/calisma-takibi">Çalışma Takibi</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/hedef_belirle">Hedef</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right"></i> Giriş</a></li>
+                    <li class="nav-item d-flex align-items-center ms-3">
+                        <!-- Tema düğmesi -->
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="themeToggle">
+                        </div>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
+
+    <!-- Navbar yüksekliği kadar boşluk -->
+    <div style="height: 80px;"></div>
+
     <main class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" data-category="{{ category }}" {% if category == 'success' %}data-show-toast="true"{% endif %}>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
         {% block content %}{% endblock content %}
     </main>
+    <button id="backToTop" class="btn" aria-label="Başa dön">
+        <i class="bi bi-arrow-up"></i>
+    </button>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         // Sayfa yükleme spinner'ı fonksiyonları
         function showLoadingSpinner() {

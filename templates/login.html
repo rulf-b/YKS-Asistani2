@@ -5,35 +5,45 @@
         <div class="card shadow-sm">
             <div class="card-body p-5">
                 <h2 class="card-title text-center mb-4 text-primary"><i class="bi bi-box-arrow-in-right me-2"></i> Giriş Yap</h2>
-                <form method="POST" action="" novalidate>
+                <form method="POST" action="/login" novalidate>
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
                         <label for="username" class="form-label">{{ form.username.label }}</label>
-                        <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" id="username" name="username" value="{{ form.username.data or '' }}" required>
-                        <div class="invalid-feedback">
-                            {% for error in form.username.errors %}{{ error }}{% endfor %}
-                        </div>
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">{{ form.password.label }}</label>
-                        <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}" id="password" name="password" required>
-                        <div class="invalid-feedback">
-                            {% for error in form.password.errors %}{{ error }}{% endfor %}
-                        </div>
+                        {{ form.password(class="form-control") }}
+                        {% if form.password.errors %}
+                            {% for error in form.password.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
-                    <div class="form-check mb-3">
+                    <div class="mb-3">
                         {{ form.remember_me(class="form-check-input") }}
-                        <label class="form-check-label" for="remember_me">{{ form.remember_me.label }}</label>
+                        {{ form.remember_me.label(class="form-check-label") }}
                     </div>
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
                     <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">{{ form.submit.label }}</button>
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
                     </div>
                 </form>
                 <div class="text-center mt-4">
                     <small class="text-muted">
-                        {# Şifre sıfırlama linki eklendi #}
-                        <a href="{{ url_for('reset_request') }}" class="text-decoration-none text-info fw-medium">Şifremi unuttum</a> | 
-                        Hesabın yok mu? <a href="{{ url_for('register') }}" class="text-decoration-none text-primary fw-medium">Hemen Kayıt Ol</a>
+                        <a href="/reset_password" class="text-decoration-none text-info fw-medium">Şifremi unuttum</a> | 
+                        Hesabın yok mu? <a href="/register" class="text-decoration-none text-primary fw-medium">Hemen Kayıt Ol</a>
                     </small>
                 </div>
             </div>

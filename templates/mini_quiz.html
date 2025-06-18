@@ -3,23 +3,121 @@
     <h2 class="text-primary mb-4"><i class="bi bi-patch-question-fill me-2"></i> Mini Quiz: Eksiklerini Gider!</h2>
     <p class="text-muted mb-3">Geçmişte "Bilgi Eksikliği" olarak belirlenen konularından rastgele bir quiz oluşturuldu.</p>
     
+    {# Başarı Mesajı #}
+    {% if success_message %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert" data-show-toast="true">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        {{ success_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {# Hata Mesajı #}
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+    
     {# YENİ: Quiz Konuları boşsa farklı mesaj #}
     {% if not konular %}
         <div class="alert alert-info mt-4 p-4 card shadow-sm text-center">
             <i class="bi bi-info-circle-fill display-4 mb-3"></i>
             <h4 class="card-title text-info">Tekrar listenizde hiç konu yok!</h4>
-            <p class="card-text">Quiz oluşturabilmem için lütfen önce <a href="{{ url_for('soru_analizi') }}" class="text-info fw-bold text-decoration-none">Soru Analizi</a> yaparak eksik konularını belirle.</p>
+            <p class="card-text">Quiz oluşturabilmem için lütfen önce <a href="/soru_analizi" class="text-info fw-bold text-decoration-none">Soru Analizi</a> yaparak eksik konularını belirle.</p>
         </div>
     {% else %}
         <p class="text-muted mb-4"><strong>Quiz Konuları:</strong> <span class="fw-bold text-dark">{{ konular|join(', ') }}</span></p>
         <div class="mb-5 text-center">
-            <a href="{{ url_for('mini_quiz') }}" class="btn btn-primary btn-lg"><i class="bi bi-arrow-clockwise me-2"></i> Farklı Konulardan Yeni Quiz Oluştur</a>
+            <a href="/mini_quiz" class="btn btn-primary btn-lg"><i class="bi bi-arrow-clockwise me-2"></i> Farklı Konulardan Yeni Quiz Oluştur</a>
         </div>
 
         <hr class="my-5">
         
         <div class="quiz-icerigi card shadow-sm p-4" style="white-space: pre-wrap; background-color: var(--card-bg); font-family: 'Inter', sans-serif; line-height: 1.8;">
-            {{ quiz_icerigi|markdown }}
+            {{ quiz_icerigi|safe }}
         </div>
+
+        <hr class="my-5">
+
+        <div class="card shadow-sm p-4">
+            <h5 class="mb-4 text-muted"><i class="bi bi-clipboard-check me-2"></i> Quiz Sonucunu Kaydet</h5>
+            <form method="POST" action="" novalidate>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="dogru_sayisi" class="form-label fw-bold">Doğru Sayısı:</label>
+                        <input type="number" class="form-control" name="dogru_sayisi" id="dogru_sayisi" placeholder="0" required min="0">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="yanlis_sayisi" class="form-label fw-bold">Yanlış Sayısı:</label>
+                        <input type="number" class="form-control" name="yanlis_sayisi" id="yanlis_sayisi" placeholder="0" required min="0">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="bos_sayisi" class="form-label fw-bold">Boş Sayısı:</label>
+                        <input type="number" class="form-control" name="bos_sayisi" id="bos_sayisi" placeholder="0" required min="0">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="konu" class="form-label fw-bold">Quiz Konusu:</label>
+                    <select class="form-select" name="konu" id="konu" required>
+                        <option value="">Konu seçin...</option>
+                        {% for konu in konular %}
+                        <option value="{{ konu }}">{{ konu }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-save me-2"></i> Sonucu Kaydet</button>
+                </div>
+            </form>
+        </div>
+
+        <hr class="my-5">
+
+        <!-- Quiz Sonuçları -->
+        <h2 class="mt-4 text-primary"><i class="bi bi-graph-up me-2"></i> Quiz Sonuçların</h2>
+        {% if quiz_sonuclari %}
+        <div class="table-responsive card shadow-sm p-3">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Konu</th>
+                        <th>Doğru</th>
+                        <th>Yanlış</th>
+                        <th>Boş</th>
+                        <th>Başarı %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quiz in quiz_sonuclari %}
+                    <tr>
+                        <td>{{ quiz.tarih.strftime('%d-%m-%Y %H:%M') }}</td>
+                        <td>{{ quiz.konu }}</td>
+                        <td><span class="badge bg-success">{{ quiz.dogru_sayisi }}</span></td>
+                        <td><span class="badge bg-danger">{{ quiz.yanlis_sayisi }}</span></td>
+                        <td><span class="badge bg-warning">{{ quiz.bos_sayisi }}</span></td>
+                        <td>
+                            {% set toplam = quiz.dogru_sayisi + quiz.yanlis_sayisi + quiz.bos_sayisi %}
+                            {% if toplam > 0 %}
+                                <span class="badge bg-info">{{ "%.1f"|format(quiz.dogru_sayisi / toplam * 100) }}%</span>
+                            {% else %}
+                                <span class="badge bg-secondary">0%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center my-4 p-4 card shadow-sm text-muted">
+            <i class="bi bi-patch-question display-4 mb-3"></i>
+            <h4 class="card-title text-muted">Henüz quiz sonucu kaydedilmemiş!</h4>
+            <p class="card-text">İlk quiz sonucunu kaydetmek için yukarıdaki formu kullan.</p>
+        </div>
+        {% endif %}
     {% endif %}
 {% endblock content %}
