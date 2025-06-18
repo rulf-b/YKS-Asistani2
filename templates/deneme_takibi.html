@@ -3,26 +3,32 @@
     <h2 class="mb-4 text-primary"><i class="bi bi-graph-up me-2"></i> Net Gelişim Grafiğin (TYT Toplam)</h2>
     {% if denemeler and denemeler|length > 1 %}
         <div class="mb-4 card shadow-sm p-4">
-            <canvas id="tytNetGrafik"></canvas> {# id tytNetGrafik olarak değiştirildi #}
+            <canvas id="tytNetGrafik"></canvas>
         </div>
         <div class="text-center mb-5">
             <a href="{{ url_for('performans_yorumu') }}" class="btn btn-success btn-lg"><i class="bi bi-robot me-2"></i> Performansımı Yorumla</a>
         </div>
 
-        {# YENİ: AYT Toplam Net Grafiği #}
         <h2 class="mb-4 text-primary mt-5"><i class="bi bi-graph-up me-2"></i> Net Gelişim Grafiğin (AYT Toplam)</h2>
         <div class="mb-4 card shadow-sm p-4">
             <canvas id="aytNetGrafik"></canvas>
         </div>
 
-        {# YENİ: Ders Bazlı Net Grafiği (Örnek: TYT Türkçe ve TYT Matematik) #}
         <h2 class="mb-4 text-primary mt-5"><i class="bi bi-bar-chart-line me-2"></i> Ders Bazlı Net Gelişimi (Son 5 Deneme)</h2>
         <div class="mb-4 card shadow-sm p-4">
             <canvas id="dersBazliNetGrafik"></canvas>
         </div>
 
     {% else %}
-        <p class="alert alert-info mt-4 p-4 card shadow-sm"><i class="bi bi-info-circle-fill me-2"></i> Grafik ve yapay zekâ yorumu için en az 2 deneme sonucu girmelisiniz.</p>
+        {# YENİ: Boş Durum Tasarımı #}
+        <div class="text-center my-4 p-4 card shadow-sm text-muted">
+            <i class="bi bi-bar-chart-fill display-4 mb-3"></i>
+            <h4 class="card-title text-muted">Henüz deneme sonucu kaydı yok!</h4>
+            <p class="card-text">Net gelişimini takip etmek ve performans yorumu almak için deneme sonuçlarını eklemeye başla.</p>
+            <button class="btn btn-primary btn-lg mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                <i class="bi bi-plus-circle me-2"></i> İlk Denemeni Ekle
+            </button>
+        </div>
     {% endif %}
     
     <hr class="my-5">

@@ -48,6 +48,11 @@
         </table>
     </div>
     {% else %}
-        <p class="text-center text-muted mt-4 p-4 card shadow-sm">Henüz kaydedilmiş bir çalışma oturumu bulunmuyor. İlk oturumunu hemen ekle!</p>
+        {# YENİ: Boş Durum Tasarımı #}
+        <div class="text-center my-4 p-4 card shadow-sm text-muted">
+            <i class="bi bi-clock-history display-4 mb-3"></i>
+            <h4 class="card-title text-muted">Henüz kaydedilmiş bir çalışma oturumu bulunmuyor!</h4>
+            <p class="card-text">Çalışma alışkanlıklarını takip etmeye başlamak için ilk oturumunu ekle.</p>
+        </div>
     {% endif %}
 {% endblock content %}

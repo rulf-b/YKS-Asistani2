@@ -33,6 +33,7 @@
             color: var(--text-dark);
             line-height: 1.6;
             /* background-image: linear-gradient(135deg, var(--bg-light) 0%, #eef1f6 100%); */ /* İsteğe bağlı hafif degrade */
+            overflow-x: hidden; /* Yatay kaydırmayı engelle */
         }
 
         h1, h2, h3, h4, h5, h6 {
@@ -248,9 +249,142 @@
         .analiz-sonucu.card { /* Mevcut style'a ek olarak */
             border-left: 5px solid var(--success-soft);
         }
+
+        /* Sayfa Yükleme Animasyonu (Spinner Overlay) */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8); /* Yarı şeffaf beyaz */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; /* Diğer her şeyin üzerinde */
+            visibility: hidden; /* Varsayılan olarak gizli */
+            opacity: 0;
+            transition: visibility 0.3s linear, opacity 0.3s linear; /* Yumuşak geçiş */
+        }
+
+        #loadingOverlay.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .spinner-border {
+            width: 3rem; /* Büyük spinner */
+            height: 3rem;
+            color: var(--primary-dark); /* Ana renk ile uyumlu */
+        }
+
+        /* Hoş Geldin Animasyonu */
+        .animate-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInAndSlideUp 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeInAndSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Minimalist Başarı Toast Bildirimi */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050; /* Bootstrap toast z-index'i */
+        }
+
+        .custom-toast.toast {
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            background-color: var(--success-soft); /* Başarı rengi */
+            color: white;
+            animation: slideInFromRight 0.5s ease-out forwards, fadeOut 0.5s ease-in 2.5s forwards; /* Kayma ve solma animasyonları */
+        }
+
+        .custom-toast.toast-header {
+            background-color: var(--success-soft);
+            color: white;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            font-weight: bold;
+        }
+        
+        .custom-toast.toast-header .btn-close {
+            filter: invert(1); /* Kapatma ikonunu beyaz yap */
+        }
+
+        .custom-toast.toast-body {
+            color: white;
+        }
+
+        @keyframes slideInFromRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* YENİ: Duyarlı Tasarım İçin Tablo İyileştirmeleri */
+        /* Geniş tablolarda yatay kaydırma çubuğu */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* iOS için yumuşak kaydırma */
+        }
+
+        /* Küçük ekranlarda tablo başlıklarını görünür tutma (isteğe bağlı) */
+        @media (max-width: 768px) {
+            .table.table-bordered th, .table.table-bordered td {
+                white-space: nowrap; /* Hücre içeriğinin tek satırda kalmasını sağlar */
+            }
+        }
     </style>
 </head>
 <body>
+    {# YÜKLEME OVERLAY'İ #}
+    <div id="loadingOverlay">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Yükleniyor...</span>
+        </div>
+    </div>
+
+    {# Başarı Toast Bildirimi Kapsayıcısı #}
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast custom-toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header custom-toast-header">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong class="me-auto">Başarılı!</strong>
+                <small>Şimdi</small>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessageBody">
+                İşlem başarıyla tamamlandı.
+            </div>
+        </div>
+    </div>
+
     <nav class="navbar navbar-expand-lg navbar-dark shadow-sm mb-4">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('anasayfa') }}"><i class="bi bi-robot"></i> YKS Asistanı</a>
@@ -296,7 +430,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" data-category="{{ category }}" {% if category == 'success' %}data-show-toast="true"{% endif %}>
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
@@ -306,5 +440,67 @@
         {% block content %}{% endblock content %}
     </main>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        // Sayfa yükleme spinner'ı fonksiyonları
+        function showLoadingSpinner() {
+            document.getElementById('loadingOverlay').classList.add('show');
+        }
+
+        function hideLoadingSpinner() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+
+        // Tüm form gönderimlerinde spinner'ı göstermek için
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function() {
+                if (this.method.toLowerCase() !== 'get') {
+                    showLoadingSpinner();
+                }
+            });
+        });
+
+        // Sayfa tamamen yüklendiğinde spinner'ı gizle
+        window.addEventListener('load', hideLoadingSpinner);
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                hideLoadingSpinner();
+            }
+        });
+
+
+        // Başarı Toast Bildirimi Fonksiyonu
+        function showCustomSuccessToast(message = "İşlem başarıyla tamamlandı!") {
+            const toastElement = document.getElementById('successToast');
+            const toastBody = document.getElementById('toastMessageBody');
+            toastBody.textContent = message; // Mesajı dinamik olarak ayarla
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
+
+        // Hoş Geldin Animasyonu (Anasayfa'ya özel)
+        document.addEventListener('DOMContentLoaded', function() {
+            const mainContent = document.querySelector('main .container');
+            if (mainContent && (window.location.pathname === '/' || window.location.pathname === '/anasayfa')) {
+                mainContent.querySelectorAll('h1, h2, h3, h4, h5, p, .card, .alert, .btn, .list-group-item').forEach((element, index) => {
+                    element.style.animationDelay = `${index * 0.05}s`; 
+                    element.classList.add('animate-fade-in');
+                });
+            }
+
+            // Flash mesajlarını dinle ve 'success' ise onay Toast'unu göster
+            const flashMessages = document.querySelectorAll('.alert[data-show-toast="true"]');
+            flashMessages.forEach(msg => {
+                // Flash mesajını alıp Toast'a gönder
+                const messageText = msg.textContent.trim();
+                showCustomSuccessToast(messageText);
+                // Flash mesajı göründükten sonra, bu animasyonu tekrar tetiklememek için attribute kaldırılabilir
+                msg.removeAttribute('data-show-toast'); 
+                // Opsiyonel: Flash mesajını anında gizle (toast gösterildiği için)
+                // msg.classList.remove('show'); 
+                // msg.remove(); // Veya tamamen kaldırabilirsiniz.
+            });
+        });
+
+    </script>
 </body>
 </html>

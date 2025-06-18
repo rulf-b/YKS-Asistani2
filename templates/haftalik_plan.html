@@ -1,10 +1,11 @@
+{# templates/haftalik_plan.html #}
 {% extends "layout.html" %}
 {% block content %}
     <div class="text-center">
         <h2 class="mb-3 text-primary"><i class="bi bi-calendar2-week me-2"></i> Kişiselleştirilmiş Haftalık Planın</h2>
         <p class="lead text-muted mb-5">Son verilerine göre yapay zekâ tarafından oluşturulan 7 günlük yol haritan aşağıdadır.</p>
-        <form method="POST" action="">
-            <button type="submit" class="btn btn-success btn-lg my-4"><i class="bi bi-magic me-2"></i> Yeni ve Güncel Bir Plan Oluştur</button>
+        <form method="POST" action="" id="plan-form"> {# Bir id ekledik #}
+            <button type="submit" class="btn btn-success btn-lg my-4" id="plan-button"><i class="bi bi-magic me-2"></i> Yeni ve Güncel Bir Plan Oluştur</button>
         </form>
     </div>
 
@@ -26,4 +27,20 @@
             <i class="bi bi-info-circle-fill me-2"></i> Henüz bir plan oluşturulmadı. Yukarıdaki butona tıklayarak ilk planını oluştur!
         </div>
     {% endif %}
+
+    <script>
+        // Haftalık Plan butonu için spinner
+        const planForm = document.getElementById('plan-form');
+        const planButton = document.getElementById('plan-button');
+
+        if (planForm) {
+            planForm.addEventListener('submit', function() {
+                planButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Oluşturuluyor...';
+                planButton.disabled = true;
+                planButton.classList.add('btn-secondary');
+                planButton.classList.remove('btn-success');
+                showLoadingSpinner(); // Genel yükleme spinner'ını göster
+            });
+        }
+    </script>
 {% endblock content %}

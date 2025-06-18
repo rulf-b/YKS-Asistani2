@@ -368,12 +368,68 @@ Lütfen internet bağlantınızın aktif olduğundan ve <a href="https://aistudi
 @app.route("/anasayfa")
 @login_required
 def anasayfa():
+    # Mevcut veriler
     tekrar_konu_sayisi = TekrarKonu.query.filter_by(user_id=current_user.id).count()
     analizler = SoruAnaliz.query.filter_by(author=current_user).order_by(SoruAnaliz.tarih.desc()).limit(3).all()
     denemeler = DenemeSinavi.query.filter_by(author=current_user).order_by(DenemeSinavi.tarih.desc()).limit(3).all()
-    # Son 3 çalışma oturumunu ana sayfada göstermek için
     calisma_oturumleri = CalismaOturumu.query.filter_by(user=current_user).order_by(CalismaOturumu.tarih.desc()).limit(3).all()
-    return render_template('anasayfa.html', title='Ana Sayfa', tekrar_konu_sayisi=tekrar_konu_sayisi, analizler=analizler, denemeler=denemeler, calisma_oturumleri=calisma_oturumleri)
+
+    # YENİ EKLENEN HESAPLAMALAR
+    toplam_calisma_suresi_dakika = db.session.query(db.func.sum(CalismaOturumu.calisma_suresi_dakika)).filter_by(user_id=current_user.id).scalar() or 0
+    toplam_calisma_suresi_saat = toplam_calisma_suresi_dakika / 60
+
+    toplam_analiz_edilen_soru = SoruAnaliz.query.filter_by(user_id=current_user.id).count()
+
+    # İlerleme çubukları için netler
+    current_user_tyt_net = 0
+    current_user_ayt_net = 0
+    tyt_ilerleme_yuzde = 0
+    ayt_ilerleme_yuzde = 0
+
+    son_deneme = DenemeSinavi.query.filter_by(author=current_user).order_by(DenemeSinavi.tarih.desc()).first()
+    if current_user.hedef and son_deneme:
+        current_user_tyt_net = (son_deneme.tyt_turkce_d - son_deneme.tyt_turkce_y / 4) + \
+                               (son_deneme.tyt_sosyal_d - son_deneme.tyt_sosyal_y / 4) + \
+                               (son_deneme.tyt_mat_d - son_deneme.tyt_mat_y / 4) + \
+                               (son_deneme.tyt_fen_d - son_deneme.tyt_fen_y / 4)
+        
+        # Kullanıcının ders tercihine göre AYT netini hesaplamak daha doğru olurdu,
+        # şimdilik tüm AYT derslerini toplayan bir tahmin yapalım.
+        # Daha doğru bir hesaplama için `hedef_analizi` rotasında kullandığınız AYT net hesaplama mantığını buraya taşıyabilirsiniz.
+        current_user_ayt_net = (son_deneme.ayt_mat_d - son_deneme.ayt_mat_y / 4) + \
+                               (son_deneme.ayt_fiz_d - son_deneme.ayt_fiz_y / 4) + \
+                               (son_deneme.ayt_kim_d - son_deneme.ayt_kim_y / 4) + \
+                               (son_deneme.ayt_biy_d - son_deneme.ayt_biy_y / 4) + \
+                               (son_deneme.ayt_edebiyat_d - son_deneme.ayt_edebiyat_y / 4) + \
+                               (son_deneme.ayt_tarih1_d - son_deneme.ayt_tarih1_y / 4) + \
+                               (son_deneme.ayt_cografya1_d - son_deneme.ayt_cografya1_y / 4) + \
+                               (son_deneme.ayt_tarih2_d - son_deneme.ayt_tarih2_y / 4) + \
+                               (son_deneme.ayt_cografya2_d - son_deneme.ayt_cografya2_y / 4) + \
+                               (son_deneme.ayt_felsefe_d - son_deneme.ayt_felsefe_y / 4) + \
+                               (son_deneme.ayt_din_d - son_deneme.ayt_din_y / 4)
+
+
+        if current_user.hedef.hedef_tyt_net > 0:
+            tyt_ilerleme_yuzde = (current_user_tyt_net / current_user.hedef.hedef_tyt_net) * 100
+            if tyt_ilerleme_yuzde > 100: tyt_ilerleme_yuzde = 100 # %100'ü geçmesin
+        if current_user.hedef.hedef_ayt_net > 0:
+            ayt_ilerleme_yuzde = (current_user_ayt_net / current_user.hedef.hedef_ayt_net) * 100
+            if ayt_ilerleme_yuzde > 100: ayt_ilerleme_yuzde = 100 # %100'ü geçmesin
+            
+    return render_template('anasayfa.html', 
+                           title='Ana Sayfa', 
+                           tekrar_konu_sayisi=tekrar_konu_sayisi, 
+                           analizler=analizler, 
+                           denemeler=denemeler, 
+                           calisma_oturumleri=calisma_oturumleri,
+                           toplam_calisma_suresi_dakika=toplam_calisma_suresi_dakika,
+                           toplam_calisma_suresi_saat=toplam_calisma_suresi_saat,
+                           toplam_analiz_edilen_soru=toplam_analiz_edilen_soru,
+                           current_user_tyt_net=current_user_tyt_net,
+                           current_user_ayt_net=current_user_ayt_net,
+                           tyt_ilerleme_yuzde=tyt_ilerleme_yuzde,
+                           ayt_ilerleme_yuzde=ayt_ilerleme_yuzde
+                           )
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
@@ -505,8 +561,6 @@ def calisma_takibi():
 
 
 
-
-
 @app.route("/deneme-takibi", methods=['GET', 'POST'])
 @login_required
 def deneme_takibi():
@@ -534,12 +588,11 @@ def deneme_takibi():
         db.session.commit()
         flash('Deneme sonucunuz başarıyla kaydedildi!', 'success')
         return redirect(url_for('deneme_takibi'))
-    
     denemeler_tablo_icin = DenemeSinavi.query.filter_by(author=current_user).order_by(DenemeSinavi.tarih.desc()).all()
     denemeler_grafik_icin = list(reversed(denemeler_tablo_icin))
     grafik_etiketler = [f"{d.kaynak} ({d.tarih.strftime('%d-%m')})" for d in denemeler_grafik_icin]
     grafik_veriler = [(d.tyt_turkce_d-d.tyt_turkce_y/4)+(d.tyt_sosyal_d-d.tyt_sosyal_y/4)+(d.tyt_mat_d-d.tyt_mat_y/4)+(d.tyt_fen_d-d.tyt_fen_y/4) for d in denemeler_grafik_icin]
-    return render_template('deneme_takibi.html', title='Deneme Takibi', denemeler=denemeler_tablo_icin, grafik_etiketler=json.dumps(grafik_etiketler), grafik_veriler=json.dumps(grafik_veriler))
+    return render_template('deneme_takibi.html', title='Deneme Takibi', denemeler=denemeler_tablo_icin, denemeler_grafik_icin=denemeler_grafik_icin, grafik_etiketler=json.dumps(grafik_etiketler), grafik_veriler=json.dumps(grafik_veriler))
 
 @app.route("/performans-yorumu")
 @login_required

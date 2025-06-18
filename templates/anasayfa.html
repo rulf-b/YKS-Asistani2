@@ -11,6 +11,32 @@
                     <p class="mb-0 fs-5"><strong>{{ current_user.hedef.universite }} - {{ current_user.hedef.bolum }}</strong></p>
                     <hr>
                     <a href="{{ url_for('hedef_analizi') }}" class="btn btn-success"><i class="bi bi-graph-up-arrow me-2"></i> Detaylı Hedef Analizimi Görüntüle</a>
+                    
+                    {# YENİ: İlerleme Çubukları/Göstergeler #}
+                    <div class="mt-4">
+                        <h5 class="fw-bold text-dark mb-3">Hedef İlerlemen:</h5>
+                        <div class="mb-2">
+                            <label class="form-label">TYT Net İlerlemesi (Hedef: {{ current_user.hedef.hedef_tyt_net | round(2) }})</label>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar bg-primary" role="progressbar" 
+                                     style="width: {{ tyt_ilerleme_yuzde }}%;" 
+                                     aria-valuenow="{{ tyt_ilerleme_yuzde }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ current_user_tyt_net | default(0) | round(2) }} Net (%{{ tyt_ilerleme_yuzde | round(1) }})
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">AYT Net İlerlemesi (Hedef: {{ current_user.hedef.hedef_ayt_net | round(2) }})</label>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar bg-info" role="progressbar" 
+                                     style="width: {{ ayt_ilerleme_yuzde }}%;" 
+                                     aria-valuenow="{{ ayt_ilerleme_yuzde }}" aria-valuemin="0" aria-valuemax="100">
+                                    {{ current_user_ayt_net | default(0) | round(2) }} Net (%{{ ayt_ilerleme_yuzde | round(1) }})
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             {% else %}
                 <div class="alert alert-warning">
@@ -21,6 +47,41 @@
             {% endif %}
         </div>
     </div>
+
+    {# YENİ: Özet Kartlar #}
+    <div class="row g-4 mb-5">
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 shadow-sm text-center bg-primary text-white" style="background-color: var(--primary-dark) !important;">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <i class="bi bi-stopwatch-fill display-4 mb-3"></i>
+                    <h5 class="card-title fw-bold">Toplam Çalışma Süresi</h5>
+                    <p class="card-text fs-2 mb-0">{{ toplam_calisma_suresi_saat | round(1) }} saat</p>
+                    <small class="text-white-50 mt-1">({{ toplam_calisma_suresi_dakika }} dakika)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="card h-100 shadow-sm text-center bg-success text-white" style="background-color: var(--success-soft) !important;">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <i class="bi bi-question-circle-fill display-4 mb-3"></i>
+                    <h5 class="card-title fw-bold">Analiz Edilen Toplam Soru</h5>
+                    <p class="card-text fs-2 mb-0">{{ toplam_analiz_edilen_soru }} adet</p>
+                    <small class="text-white-50 mt-1">Yapay zeka ile</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-12">
+            <div class="card h-100 shadow-sm text-center bg-warning text-dark" style="background-color: var(--warning-soft) !important;">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <i class="bi bi-exclamation-octagon-fill display-4 mb-3"></i>
+                    <h5 class="card-title fw-bold">Eksik Konu Sayısı</h5>
+                    <p class="card-text fs-2 mb-0">{{ tekrar_konu_sayisi }} adet</p>
+                    <small class="text-dark-50 mt-1">Tekrar listende bekliyor</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <div class="row g-4 mb-5">
         <div class="col-lg-6">
@@ -37,7 +98,12 @@
                             {% endfor %}
                         </ul>
                     {% else %}
-                        <p class="card-text text-muted">Henüz analiz edilmiş soru yok. Hemen bir tane dene!</p>
+                        {# YENİ: Boş Durum Tasarımı #}
+                        <div class="text-center my-4 p-4 text-muted">
+                            <i class="bi bi-exclamation-circle-fill display-4 mb-3"></i>
+                            <p class="card-text">Henüz analiz edilmiş soru yok.</p>
+                            <p class="fw-bold">Hemen ilk analizi yap, YKS'ye bir adım önde başla!</p>
+                        </div>
                     {% endif %}
                     <a href="{{ url_for('soru_analizi') }}" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Yeni Soru Analizi Yap</a>
                 </div>
@@ -57,7 +123,12 @@
                             {% endfor %}
                         </ul>
                     {% else %}
-                        <p class="card-text text-muted">Henüz kaydedilmiş deneme yok. İlk denemeni ekle!</p>
+                        {# YENİ: Boş Durum Tasarımı #}
+                        <div class="text-center my-4 p-4 text-muted">
+                            <i class="bi bi-bar-chart-fill display-4 mb-3"></i>
+                            <p class="card-text">Henüz kaydedilmiş deneme yok.</p>
+                            <p class="fw-bold">Performansını takip etmek için ilk denemeni ekle!</p>
+                        </div>
                     {% endif %}
                      <a href="{{ url_for('deneme_takibi') }}" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Yeni Deneme Ekle</a>
                 </div>
@@ -74,13 +145,18 @@
                         <ul class="list-group list-group-flush border-0">
                             {% for oturum in calisma_oturumleri %}
                                 <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
-                                    <span class="text-truncate">{{ oturum.konu_adi if oturum.konu_adi else 'Belirtilmedi' }} ({{ oturum.calisma_suresi_dakika }} dk)</span> 
+                                    <span class="text-truncate">{{ oturum.konu_adi if oturum.konum_adi else 'Belirtilmedi' }} ({{ oturum.calisma_suresi_dakika }} dk)</span> 
                                     <small class="text-muted ms-auto">({{ oturum.tarih.strftime('%d %b') }})</small>
                                 </li>
                             {% endfor %}
                         </ul>
                     {% else %}
-                        <p class="card-text text-muted">Henüz kaydedilmiş bir çalışma oturumu yok. İlk oturumunu ekle!</p>
+                        {# YENİ: Boş Durum Tasarımı #}
+                        <div class="text-center my-4 p-4 text-muted">
+                            <i class="bi bi-clock-history display-4 mb-3"></i>
+                            <p class="card-text">Henüz kaydedilmiş bir çalışma oturumu yok.</p>
+                            <p class="fw-bold">Çalışma alışkanlıklarını takip etmeye başla!</p>
+                        </div>
                     {% endif %}
                     <a href="{{ url_for('calisma_takibi') }}" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Çalışma Oturumu Ekle</a>
                 </div>

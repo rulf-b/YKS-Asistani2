@@ -70,7 +70,12 @@
                 </div>
             {% endfor %}
         {% else %}
-            <p class="text-center text-muted mt-4 p-4 card shadow-sm">Henüz analiz edilmiş bir sorun bulunmuyor. Hemen ilk analizi yap!</p>
+            {# YENİ: Boş Durum Tasarımı #}
+            <div class="text-center my-4 p-4 card shadow-sm text-muted">
+                <i class="bi bi-search display-4 mb-3"></i>
+                <h4 class="card-title text-muted">Henüz analiz edilmiş bir sorun bulunmuyor!</h4>
+                <p class="card-text">YKS koçunuzdan hemen ilk analizi yapın ve eksiklerinizi belirleyin.</p>
+            </div>
         {% endif %}
     </div>
 
@@ -79,9 +84,6 @@
         const analizButonu = document.getElementById('analiz-butonu');
         const soruMetniInput = document.getElementById('soru');
         const soruResmiInput = document.getElementById('soru_resmi');
-        // Feedback elementleri artık kullanılmıyor, Bootstrap kendisi hallediyor
-        // const soruMetniFeedback = document.getElementById('soru_metni_feedback');
-        // const soruResmiFeedback = document.getElementById('soru_resmi_feedback');
 
         if(analizForm){
             analizForm.addEventListener('submit', function(event) {
@@ -100,16 +102,15 @@
 
                 if (!isValid) {
                     event.preventDefault(); // Formu göndermeyi engelle
-                    // Bootstrap'in kendi validasyon stillerini tetiklemek için 'was-validated' ekle
                     analizForm.classList.add('was-validated'); 
-                    // Kullanıcıya bir flash mesajı da gösterebiliriz (opsiyonel, Flask tarafında da var)
-                    // alert('Lütfen soruyu metin olarak girin veya resim yükleyin.');
                 } else {
-                    // Form geçerliyse butonu devre dışı bırak ve spinner göster
+                    // Form geçerliyse butonu devre dışı bırak ve genel spinner'ı göster
                     analizButonu.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analiz Ediliyor...';
                     analizButonu.disabled = true;
                     analizButonu.classList.add('btn-secondary');
                     analizButonu.classList.remove('btn-primary');
+                    
+                    showLoadingSpinner(); // layout.html'deki fonksiyonu çağırıyoruz
                 }
             });
 
