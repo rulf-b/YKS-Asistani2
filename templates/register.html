@@ -6,27 +6,52 @@
             <div class="card-body p-5">
                 <h2 class="card-title text-center mb-4 text-primary"><i class="bi bi-person-plus-fill me-2"></i> Hesap Oluştur</h2>
                 <form method="POST" action="/register" novalidate>
+                    {{ form.hidden_tag() }}
                     <div class="mb-3">
-                        <label for="username" class="form-label">Kullanıcı Adı</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <label for="username" class="form-label">{{ form.username.label }}</label>
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label">E-posta</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                        <label for="email" class="form-label">{{ form.email.label }}</label>
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            {% for error in form.email.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Şifre</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <label for="password" class="form-label">{{ form.password.label }}</label>
+                        {{ form.password(class="form-control") }}
+                        {% if form.password.errors %}
+                            {% for error in form.password.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label for="password2" class="form-label">Şifre (Tekrar)</label>
-                        <input type="password" class="form-control" id="password2" name="password2" required>
+                        <label for="password2" class="form-label">{{ form.password2.label }}</label>
+                        {{ form.password2(class="form-control") }}
+                        {% if form.password2.errors %}
+                            {% for error in form.password2.errors %}
+                                <div class="text-danger small mt-1">{{ error }}</div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
-                    {% if error %}
-                    <div class="alert alert-danger mt-3">{{ error }}</div>
-                    {% endif %}
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
                     <div class="d-grid mt-4">
-                        <button type="submit" class="btn btn-success btn-lg">Kayıt Ol</button>
+                        {{ form.submit(class="btn btn-success btn-lg") }}
                     </div>
                 </form>
                 <div class="text-center mt-4">

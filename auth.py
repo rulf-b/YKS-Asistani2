@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db, bcrypt, mail # YENİ: mail objesini import et
 from app.models import User # User modelini import et
-from app.forms import RegistrationForm, LoginForm # Formları import et
+from app.forms import RegistrationForm, LoginForm, RequestResetForm, ResetPasswordForm # Formları import et
 from flask_mail import Message # YENİ: Message import edildi
 from itsdangerous import URLSafeTimedSerializer as Serializer # YENİ: URLSafeTimedSerializer import edildi
 from flask import current_app # YENİ: current_app import edildi
@@ -94,6 +94,10 @@ def login():
             return redirect(next_page) if next_page else redirect(url_for('anasayfa'))
         else:
             flash('Geçersiz kullanıcı adı veya şifre.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{form[field].label.text}: {error}', 'danger')
     return render_template('login.html', form=form)
 
 @auth_bp.route('/logout')

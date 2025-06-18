@@ -1,57 +1,117 @@
 # --- KÜTÜPHANELER ---
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
-from markdown import markdown
-from datetime import datetime
-import os
-import random
-import re
-import json
-from dotenv import load_dotenv
-import google.generativeai as genai
-from werkzeug.utils import secure_filename
-from functools import wraps
-import PIL.Image
-from flask_mail import Mail, Message
-from itsdangerous import TimedSerializer as Serializer, URLSafeTimedSerializer # URLSafeTimedSerializer eklendi
-from flask import current_app # current_app import edildi
-from forms import LoginForm
-from prompts import YKS_ANALIZ_PROMPT, AI_FEEDBACK_PROMPT, PERFORMANS_YORUM_PROMPT, HEDEF_ANALIZI_PROMPT, MINI_QUIZ_PROMPT, MINI_QUIZ_ANALIZ_PROMPT
-import signal
-import sys
+from flask_login import LoginManager
+from flask_mail import Mail
+from config import Config
 
 # --- UYGULAMA KURULUMU ---
 app = Flask(__name__)
-app.jinja_env.filters['markdown'] = markdown 
-load_dotenv() # .env dosyasını yükle
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'varsayilan-gizli-anahtar')
+app.config.from_object(Config)
 
-# Veritabanı bağlantısı: PostgreSQL için veya yerel SQLite için
-database_url = os.environ.get('DATABASE_URL')
-if database_url and database_url.startswith("postgres://"):
-    database_url = database_url.replace("postgres://", "postgresql://", 1)
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url if database_url else 'sqlite:///veritabani.db'
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Flask-Mail yapılandırması
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
-app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
-
+# --- VERİTABANI KURULUMU ---
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-login_manager.login_message = "Bu sayfayı görüntülemek için lütfen giriş yapın."
-login_manager.login_message_category = "info"
-mail = Mail(app) # Mail objesini initialize et
+login_manager.login_message = 'Bu sayfaya erişmek için lütfen giriş yapın.'
+login_manager.login_message_category = 'info'
+
+# --- E-POSTA KURULUMU ---
+mail = Mail(app)
+
+# Diğer importları buraya taşıyoruz
+from flask import render_template, url_for, flash, redirect, request, jsonify, send_file, abort
+from flask_login import UserMixin, login_user, current_user, logout_user, login_required
+from itsdangerous import URLSafeTimedSerializer as Serializer
+from datetime import datetime, timedelta
+import json
+import os
+import signal
+import google.generativeai as genai
+import PIL.Image
+from markdown import markdown
+from dotenv import load_dotenv
+from functools import wraps
+
+# Load environment variables
+load_dotenv()
+
+# --- GOOGLE AI KURULUMU ---
+api_key = os.getenv('GOOGLE_API_KEY')
+if not api_key:
+    print("UYARI: GOOGLE_API_KEY bulunamadı! Lütfen .env dosyanızı kontrol edin.")
+else:
+    try:
+        genai.configure(api_key=api_key)
+        # Test amaçlı bir model oluşturmayı dene
+        model = genai.GenerativeModel('gemini-pro')
+        print("Google AI API başarıyla yapılandırıldı ve test edildi.")
+    except Exception as e:
+        print(f"Google AI API yapılandırma hatası: {str(e)}")
+
+def get_gemini_response(prompt, model_name='gemini-pro'):
+    try:
+        model = genai.GenerativeModel(model_name)
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"Gemini API Hatası: {str(e)}")
+        return f"Üzgünüm, bir hata oluştu: {str(e)}"
+
+def get_gemini_analysis(soru_metni=None, soru_resmi=None, ogrenci_cevabi=""):
+    try:
+        if not os.getenv('GOOGLE_API_KEY'):
+            return "Gemini API anahtarı ayarlanmadığı için analiz yapılamıyor.", None, None, None
+        
+        model = genai.GenerativeModel('gemini-pro')
+        
+        # Prompt'u hazırla
+        prompt = YKS_ANALIZ_PROMPT.format(ogrenci_cevabi=ogrenci_cevabi)
+        
+        content_parts = [prompt]
+        if soru_resmi:
+            content_parts.insert(0, soru_resmi)
+        elif soru_metni:
+            content_parts.insert(0, f"Lütfen aşağıdaki metin sorusunu analiz et: {soru_metni}")
+        
+        response = model.generate_content(content_parts)
+        full_text = response.text
+        
+        # Markdown formatını temizle
+        full_text = full_text.strip()
+        if full_text.startswith('```markdown') and full_text.endswith('```'):
+            full_text = full_text[len('```markdown'):-len('```')].strip()
+        elif full_text.startswith('```') and full_text.endswith('```'):
+            full_text = full_text[len('```'):-len('```')].strip()
+            
+        # Bölümleri ayır
+        parts = full_text.split('---')
+        if len(parts) >= 2:
+            bolum1 = parts[0].strip()
+            bolum2 = parts[1].strip()
+            
+            # Konu ve zorluk derecesini çıkar
+            konu = None
+            zorluk = None
+            hata_turu = None
+            
+            for line in bolum2.split('\n'):
+                if line.startswith('Konu:'):
+                    konu = line.replace('Konu:', '').strip()
+                elif line.startswith('Zorluk:'):
+                    zorluk = line.replace('Zorluk:', '').strip()
+                elif line.startswith('Hata Türü:'):
+                    hata_turu = line.replace('Hata Türü:', '').strip()
+            
+            return bolum1, konu, zorluk, hata_turu
+        
+        return full_text, None, None, None
+        
+    except Exception as e:
+        print(f"Gemini API Hatası: {str(e)}")
+        return "Analiz sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.", None, None, None
 
 # --- KULLANICI YÜKLEYİCİ FONKSİYON ---
 @login_manager.user_loader
@@ -59,44 +119,27 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- VERİTABANI MODELLERİ ---
-# app.models'dan çekildiği varsayılıyor, bu dosya içinde yeniden tanımlanmayacak.
-# Ancak, user tarafından yüklenen 'app.py' dosyası tüm modelleri içerdiği için,
-# burada da modelleri tekrar tanımlıyorum. Modüler bir yapıda bu modeller
-# models.py'den import edilmelidir.
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(30), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(60), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
-    ders_tercihi = db.Column(db.String(50), nullable=True) # Sayısal, Sözel, Eşit Ağırlık
-    bos_zamanlar_json = db.Column(db.Text, nullable=True) # JSON olarak boş zaman dilimleri
-    email_confirmed = db.Column(db.Boolean, default=False) # E-posta doğrulandı mı?
+    ders_tercihi = db.Column(db.String(50), nullable=True)
+    bos_zamanlar_json = db.Column(db.Text, nullable=True)
+    email_confirmed = db.Column(db.Boolean, default=False)
     
     soru_analizleri = db.relationship('SoruAnaliz', backref='author', lazy=True)
     denemeleri = db.relationship('DenemeSinavi', backref='author', lazy=True)
     hedef = db.relationship('Hedef', backref='user', uselist=False, cascade="all, delete-orphan")
     tekrar_konulari = db.relationship('TekrarKonu', backref='user', lazy=True, cascade="all, delete-orphan")
-    # Quiz ile ilgili modeller dahil edilmediği için bu kısım burada eksik kalacak.
+    calisma_oturumlari = db.relationship('CalismaOturumu', backref='user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
         return bcrypt.check_password_hash(self.password_hash, password)
-
-    def get_reset_token(self, expires_sec=1800): # 30 dakika geçerli
-        s = Serializer(app.config['SECRET_KEY'], expires_sec)
-        return s.dumps({'user_id': self.id}).decode('utf-8')
-
-    @staticmethod
-    def verify_reset_token(token):
-        s = Serializer(app.config['SECRET_KEY'])
-        try:
-            user_id = s.loads(token)['user_id']
-        except:
-            return None
-        return User.query.get(user_id)
-
 
 class Hedef(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -109,8 +152,9 @@ class Hedef(db.Model):
 
 class TekrarKonu(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    konu_adi = db.Column(db.String(200), nullable=False)
-    eklenme_tarihi = db.Column(db.DateTime, default=datetime.utcnow)
+    konu_adi = db.Column(db.String(250), nullable=False)
+    son_tekrar = db.Column(db.DateTime, nullable=True)
+    tekrar_sayisi = db.Column(db.Integer, default=0)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class SoruAnaliz(db.Model):
@@ -119,9 +163,9 @@ class SoruAnaliz(db.Model):
     cevap_metni = db.Column(db.Text, nullable=True)
     analiz_sonucu = db.Column(db.Text, nullable=False)
     tarih = db.Column(db.DateTime, default=datetime.utcnow)
-    konu = db.Column(db.String(250), nullable=True) # Ders > Konu > Alt Konu formatında saklayabiliriz
-    zorluk_derecesi = db.Column(db.String(50), nullable=True) # Kolay/Orta/Zor
-    hata_turu = db.Column(db.String(100), nullable=True) # Bilgi Eksikliği, İşlem Hatası vb.
+    konu = db.Column(db.String(250), nullable=True)
+    zorluk_derecesi = db.Column(db.String(50), nullable=True)
+    hata_turu = db.Column(db.String(100), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class DenemeSinavi(db.Model):
@@ -163,11 +207,9 @@ class DenemeSinavi(db.Model):
 class CalismaOturumu(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tarih = db.Column(db.DateTime, default=datetime.utcnow)
-    calisma_suresi_dakika = db.Column(db.Integer, nullable=False) # Dakika cinsinden
-    konu_adi = db.Column(db.String(250), nullable=True) # Çalışılan konu
+    calisma_suresi_dakika = db.Column(db.Integer, nullable=False)
+    konu_adi = db.Column(db.String(250), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user = db.relationship('User', backref='calisma_oturumleri', lazy=True) # User modeline geri bağlantı
-
 
 # --- ADMİN KORUMA DECORATOR'I ---
 def admin_required(f):
@@ -190,85 +232,6 @@ if api_key_global:
     genai.configure(api_key=api_key_global)
 else:
     print("UYARI: Gemini API anahtarı .env dosyasında bulunamadı. Lütfen .env dosyanızı kontrol edin.")
-
-def get_gemini_analysis(soru_metni=None, soru_resmi=None, ogrenci_cevabi=""):
-    # API anahtarını fonksiyon içinde tekrar kontrol ediyoruz
-    if not api_key_global: # Globaldeki api_key_global değişkenini kullan
-        return "Gemini API anahtarı ayarlanmadığı için analiz yapılamıyor.", None, None, None
-    
-    model = genai.GenerativeModel('gemini-1.5-pro-latest')
-    
-    # Prompt'u daha net hale getirelim ve istemediğimiz çıktıları belirtelim
-    # BÖLÜM 1 ve BÖLÜM 2 ayrımını ve '---' işaretini koruyarak sadece istenen Markdown'ı almasını isteyelim
-    prompt = YKS_ANALIZ_PROMPT.format(ogrenci_cevabi=ogrenci_cevabi)
-    
-    content_parts = [prompt]
-    if soru_resmi:
-        content_parts.insert(0, soru_resmi)
-    elif soru_metni:
-        content_parts.insert(0, f"Lütfen aşağıdaki metin sorusunu analiz et: {soru_metni}")
-    
-    try:
-        response = model.generate_content(content_parts)
-        full_text = response.text
-        
-        # Fazla boşlukları ve potansiyel kod bloğu işaretlerini temizleyelim
-        full_text = full_text.strip()
-        if full_text.startswith('```markdown') and full_text.endswith('```'):
-            full_text = full_text[len('```markdown'):-len('```')].strip()
-        elif full_text.startswith('```') and full_text.endswith('```'):
-            full_text = full_text[len('```'):-len('```')].strip()
-
-        # Bölüm 1 ve Bölüm 2'yi ayır
-        parts = full_text.split('---', 1)
-        
-        # Eğer parçalara ayrılamıyorsa (yani '---' yoksa veya format bozuksa)
-        if len(parts) < 2:
-            # Bu durumda tüm metni analiz olarak alıp varsayılanları ayarlayalım
-            user_analysis = parts[0].strip() if parts else "Analiz formatı hatalı."
-            konu = None
-            zorluk_derecesi = None
-            hata_turu = None
-        else:
-            data_block = parts[0]
-            user_analysis = parts[1].strip()
-
-            # Regex ile bilgileri çıkar
-            konu_match = re.search(r"\[KONU\]:\s*(.*)", data_block)
-            zorluk_derecesi_match = re.search(r"\[ZORLUK_DERECESI\]:\s*(.*)", data_block)
-            hata_turu_match = re.search(r"\[HATA_TURU\]:\s*(.*)", data_block)
-
-            konu = konu_match.group(1).strip() if konu_match else None
-            zorluk_derecesi = zorluk_derecesi_match.group(1).strip() if zorluk_derecesi_match else None
-            hata_turu = hata_turu_match.group(1).strip() if hata_turu_match else None
-
-        # Yapay zeka boş veya genel "belirsiz" yanıtlar döndürdüğünde özel bir mesaj göster
-        # HTML etiketlerini veya "BÖLÜM 2:" gibi başlıkları temizleyelim.
-        if "Belirsiz" in user_analysis or "Bir soru bulunmadığı için" in user_analysis or "Soru Yok" in user_analysis or "<p>BÖLÜM 2:" in user_analysis:
-            user_analysis = """### 📚 Konu ve Zorluk Analizi
-* **Ders ve Konu:** Henüz bir soru analiz edilmedi.
-* **Zorluk Derecesi:** Belirlenemedi.
-### 🤔 Hata Analizi
-* **Hata Türü:** Belirlenemedi.
-* **Açıklama:** Analiz yapabilmem için lütfen bir soru ve dilerseniz kendi çözümünüzü veya düşüncelerinizi paylaşın.
-### 💡 Çözüm Yolu ve Geri Bildirim
-* **Doğru Çözüm:** Bir soru analiz edildiğinde burada doğru çözüm yolunu göreceksiniz.
-* **Kişisel Tavsiye:** Analiz için ilk sorunuzu girerek YKS hedeflerinize bir adım daha yaklaşın!
-### 🎬 Tavsiye Edilen Kaynaklar
-* **Önemli:** Konuya özel kaynak önerileri için lütfen bir soru analizi yapın.
-"""
-            konu = None
-            zorluk_derecesi = None
-            hata_turu = None
-
-        return user_analysis, konu, zorluk_derecesi, hata_turu
-    except Exception as e:
-        import traceback 
-        print(f"------------ YAPAY ZEKA HATA DETAYI BAŞLANGIÇ ------------")
-        print(f"Yapay zekâya bağlanırken bir sorun oluştu: {e}")
-        traceback.print_exc() 
-        print(f"------------ YAPAY ZEKA HATA DETAYI BİTİŞ ------------")
-        return f"Yapay zekâya bağlanırken bir sorun oluştu: {e}\n\nLütfen API anahtarınızın doğru olduğundan ve internet bağlantınızın bulunduğundan emin olun.", None, None, None
 
 # --- SAYFA ROUTE'LARI ---
 
@@ -442,43 +405,61 @@ def register():
         return redirect(url_for('anasayfa'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = User(
-            username=form.username.data,
-            email=form.email.data,
-            password_hash=bcrypt.generate_password_hash(form.password.data).decode('utf-8'),
-            email_confirmed=False
-        )
-        db.session.add(user)
-        db.session.commit()
-        # E-posta doğrulama linki gönder
-        token = generate_confirmation_token(user.email)
-        confirm_url = url_for('confirm_email', token=token, _external=True)
-        send_email(user.email, 'YKS Asistanı: E-posta Doğrulama', 'confirm_email', 
-                   user=user, confirm_url=confirm_url, expires_min=60) # 60 dakika geçerlilik
-        flash('Kayıt başarılı! Hesabınızı etkinleştirmek için e-postanıza gönderilen linke tıklayın.', 'info')
-        return redirect(url_for('login'))
+        try:
+            hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+            user = User(
+                username=form.username.data,
+                email=form.email.data,
+                password_hash=hashed_password,
+                email_confirmed=False
+            )
+            db.session.add(user)
+            db.session.commit()
+            # E-posta doğrulama linki gönder
+            token = generate_confirmation_token(user.email)
+            confirm_url = url_for('confirm_email', token=token, _external=True)
+            send_email(user.email, 'YKS Asistanı: E-posta Doğrulama', 'confirm_email', 
+                       user=user, confirm_url=confirm_url, expires_min=60) # 60 dakika geçerlilik
+            flash('Kayıt başarılı! Hesabınızı etkinleştirmek için e-postanıza gönderilen linke tıklayın.', 'info')
+            return redirect(url_for('login'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Kayıt sırasında bir hata oluştu: {str(e)}', 'danger')
+            return redirect(url_for('register'))
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{form[field].label.text}: {error}', 'danger')
     return render_template('register.html', title='Kayıt Ol', form=form)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        if current_user.is_admin: 
+        if current_user.is_admin:
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('anasayfa'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
-            if not user.email_confirmed: 
-                flash('Lütfen hesabınızı etkinleştirmek için e-postanızı doğrulayın.', 'warning')
-                return redirect(url_for('login'))
-            login_user(user, remember=form.remember_me.data)
-            if user.is_admin:
-                return redirect(url_for('admin_dashboard'))
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('anasayfa'))
-        else:
-            flash('Geçersiz kullanıcı adı veya şifre.', 'danger')
+        try:
+            user = User.query.filter_by(username=form.username.data).first()
+            if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
+                if not user.email_confirmed:
+                    flash('Lütfen hesabınızı etkinleştirmek için e-postanızı doğrulayın.', 'warning')
+                    return redirect(url_for('login'))
+                login_user(user, remember=form.remember_me.data)
+                if user.is_admin:
+                    return redirect(url_for('admin_dashboard'))
+                next_page = request.args.get('next')
+                return redirect(next_page) if next_page else redirect(url_for('anasayfa'))
+            else:
+                flash('Geçersiz kullanıcı adı veya şifre.', 'danger')
+        except Exception as e:
+            flash(f'Giriş sırasında bir hata oluştu: {str(e)}', 'danger')
+            return redirect(url_for('login'))
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{form[field].label.text}: {error}', 'danger')
     return render_template('login.html', title='Giriş Yap', form=form)
 
 @app.route("/logout")
@@ -634,64 +615,49 @@ def performans_yorumu():
 @app.route('/hedef-belirle', methods=['GET', 'POST'])
 @login_required
 def hedef_belirle():
+    form = HedefForm()
     mevcut_hedef = current_user.hedef
-    if request.method == 'POST':
-        universite = request.form.get('universite')
-        bolum = request.form.get('bolum')
-        hedef_siralama = request.form.get('hedef_siralama')
-        hedef_tyt_net = request.form.get('hedef_tyt_net')
-        hedef_ayt_net = request.form.get('hedef_ayt_net')
-        ders_tercihi = request.form.get('ders_tercihi')
-        
-        # Boş zaman dilimlerini formdan alıyoruz (JavaScript tarafından gönderilecek)
-        bos_zamanlar_data = {}
-        for day in ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]:
-            bos_zamanlar_data[day] = request.form.getlist(f'bos_zaman_{day}[]') # Liste olarak al
-
-        bos_zamanlar_json = json.dumps(bos_zamanlar_data)
-
-
-        if not all([universite, bolum, hedef_siralama, hedef_tyt_net, hedef_ayt_net, ders_tercihi]):
-            flash('Lütfen tüm zorunlu alanları doldurun.', 'danger')
-            return redirect(url_for('hedef_belirle'))
-        
-        if mevcut_hedef:
-            mevcut_hedef.universite = universite
-            mevcut_hedef.bolum = bolum
-            mevcut_hedef.hedef_siralama = int(hedef_siralama)
-            mevcut_hedef.hedef_tyt_net = float(hedef_tyt_net)
-            mevcut_hedef.hedef_ayt_net = float(hedef_ayt_net)
-            flash('Hedefin güncellendi!', 'success')
-        else:
-            yeni_hedef = Hedef(
-                universite=universite, 
-                bolum=bolum, 
-                hedef_siralama=int(hedef_siralama), 
-                hedef_tyt_net=float(hedef_tyt_net), 
-                hedef_ayt_net=float(hedef_ayt_net), 
-                user=current_user
-            )
-            db.session.add(yeni_hedef)
-            flash('Hedefin kaydedildi!', 'success')
-        
-        # Kullanıcının ders tercihi ve boş zaman bilgilerini User modeline kaydet
-        current_user.ders_tercihi = ders_tercihi
-        current_user.bos_zamanlar_json = bos_zamanlar_json
-        
-        db.session.commit()
-        return redirect(url_for('anasayfa'))
     
-    # Mevcut boş zamanları çekip HTML'e göndermek için
-    mevcut_bos_zamanlar = {}
-    if current_user.bos_zamanlar_json:
-        mevcut_bos_zamanlar = json.loads(current_user.bos_zamanlar_json)
-
-    return render_template(
-        'hedef_belirle.html', 
-        title='Hedefini Belirle', 
-        hedef=mevcut_hedef,
-        mevcut_bos_zamanlar=mevcut_bos_zamanlar
-    )
+    if form.validate_on_submit():
+        try:
+            if mevcut_hedef:
+                mevcut_hedef.universite = form.universite.data
+                mevcut_hedef.bolum = form.bolum.data
+                mevcut_hedef.hedef_siralama = form.hedef_siralama.data
+                mevcut_hedef.hedef_tyt_net = form.hedef_tyt_net.data
+                mevcut_hedef.hedef_ayt_net = form.hedef_ayt_net.data
+                current_user.ders_tercihi = form.ders_tercihi.data
+                flash('Hedefin güncellendi!', 'success')
+            else:
+                yeni_hedef = Hedef(
+                    universite=form.universite.data,
+                    bolum=form.bolum.data,
+                    hedef_siralama=form.hedef_siralama.data,
+                    hedef_tyt_net=form.hedef_tyt_net.data,
+                    hedef_ayt_net=form.hedef_ayt_net.data,
+                    user=current_user
+                )
+                current_user.ders_tercihi = form.ders_tercihi.data
+                db.session.add(yeni_hedef)
+                flash('Hedefin kaydedildi!', 'success')
+            
+            db.session.commit()
+            return redirect(url_for('hedef_belirle'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Bir hata oluştu: {str(e)}', 'danger')
+            return redirect(url_for('hedef_belirle'))
+    
+    # Form verilerini doldur
+    if mevcut_hedef:
+        form.universite.data = mevcut_hedef.universite
+        form.bolum.data = mevcut_hedef.bolum
+        form.hedef_siralama.data = mevcut_hedef.hedef_siralama
+        form.hedef_tyt_net.data = mevcut_hedef.hedef_tyt_net
+        form.hedef_ayt_net.data = mevcut_hedef.hedef_ayt_net
+        form.ders_tercihi.data = current_user.ders_tercihi
+    
+    return render_template('hedef_belirle.html', title='Hedef Belirle', form=form)
 
 @app.route('/hedef-analizi')
 @login_required
@@ -1076,27 +1042,22 @@ def reset_request():
     if current_user.is_authenticated:
         return redirect(url_for('anasayfa'))
     
-    # Form'dan gelen kod
-    # from app.forms import RequestResetForm # Buradan import edilmesi gerekiyor
-    # form = RequestResetForm() 
-    
-    # Geçici olarak forms.py'deki formları içermediğimiz için manuel form kontrolü
-    if request.method == 'POST':
-        email = request.form.get('email')
-        user = User.query.filter_by(email=email).first()
+    form = RequestResetForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
         if user:
             token = user.get_reset_token()
             reset_url = url_for('reset_token', token=token, _external=True)
             send_email(user.email, 'YKS Asistanı: Şifre Sıfırlama İsteği', 'reset_password', 
-                       user=user, reset_url=reset_url, expires_min=30) # 30 dakika geçerlilik
+                       user=user, reset_url=reset_url, expires_min=30)
             flash('Şifre sıfırlama talimatları e-posta adresinize gönderildi. Lütfen e-postanızı kontrol edin.', 'info')
             return redirect(url_for('login'))
-        else:
-            flash('Bu e-posta adresine sahip bir kullanıcı bulunamadı.', 'danger')
-            # Güvenlik için, e-posta bulunmasa bile "gönderildi" mesajı vermek daha iyi olabilir
-            # flash('Şifre sıfırlama talimatları e-posta adresinize gönderildi (eğer kayıtlıysa).', 'info')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{form[field].label.text}: {error}', 'danger')
             
-    return render_template('reset_request.html', title='Şifre Sıfırla') # form=form çıkarıldı
+    return render_template('reset_request.html', title='Şifre Sıfırla', form=form)
 
 # YENİ: Şifre Sıfırlama Token Doğrulama ve Yeni Şifre Belirleme Rotası
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
@@ -1109,25 +1070,19 @@ def reset_token(token):
         flash('Şifre sıfırlama linki geçersiz veya süresi dolmuş.', 'danger')
         return redirect(url_for('reset_request'))
     
-    # Form'dan gelen kod
-    # from app.forms import ResetPasswordForm # Buradan import edilmesi gerekiyor
-    # form = ResetPasswordForm() 
-    
-    # Geçici olarak forms.py'deki formları içermediğimiz için manuel form kontrolü
-    if request.method == 'POST':
-        password = request.form.get('password')
-        password2 = request.form.get('password2')
-        if password != password2:
-            flash('Şifreler eşleşmiyor.', 'danger')
-            return redirect(url_for('reset_token', token=token))
-        
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         user.password_hash = hashed_password
         db.session.commit()
         flash('Şifreniz başarıyla güncellendi! Artık yeni şifrenizle giriş yapabilirsiniz.', 'success')
         return redirect(url_for('login'))
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{form[field].label.text}: {error}', 'danger')
     
-    return render_template('reset_token.html', title='Şifre Sıfırla') # form=form çıkarıldı
+    return render_template('reset_token.html', title='Şifre Sıfırla', form=form)
 
 
 # --- UYGULAMAYI ÇALIŞTIR ---

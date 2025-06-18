@@ -1,3 +1,6 @@
+# Bu dosya sadece Python paketi olduğunu belirtmek için var
+# Tüm uygulama mantığı app.py'de
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate

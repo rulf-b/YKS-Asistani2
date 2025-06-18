@@ -2,7 +2,13 @@
 {% block content %}
 <div class="container">
     <div class="px-4 py-5 text-center">
-        <h1 class="display-5 fw-bold">Merhaba, {{ user.username }}! 👋</h1>
+        <h1 class="display-5 fw-bold">
+            {% if user %}
+                Merhaba, {{ user.username }}! 👋
+            {% else %}
+                Hoş geldiniz! 👋
+            {% endif %}
+        </h1>
         <div class="col-lg-8 mx-auto">
             <p class="lead mb-4 text-muted">YKS Asistanı panona hoş geldin. Hedeflerine bir adım daha yaklaşmak için bugün ne yapmak istersin?</p>
             {% if hedef %}
@@ -172,5 +178,36 @@
              </div>
         </div>
     </div>
+
+    <!-- Grafikler Row -->
+    <div class="row g-4 mb-5 fade-in" data-aos="fade-up">
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-primary"><i class="bi bi-bar-chart-fill me-2"></i> Haftalık Çalışma Süresi</h5>
+                    <canvas id="studyChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-primary"><i class="bi bi-pie-chart-fill me-2"></i> Net İlerlemesi</h5>
+                    <canvas id="netChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock content %}
+
+{# --- Grafikler --- #}
+{% block extra_scripts %}
+<script>
+    // Haftalık çalışma verileri (dakika) - henüz gerçek zamanlı değil
+    window.weekData = {{ haftalik_calisma | default([0,0,0,0,0,0,0]) }};
+    // Net ilerlemeleri
+    window.netData = [{{ current_user_tyt_net | default(0) }}, {{ current_user_ayt_net | default(0) }}];
+</script>
+<script src="/static/js/dashboard.js"></script>
+{% endblock extra_scripts %}
