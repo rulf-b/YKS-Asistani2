@@ -8,16 +8,34 @@
                 <form method="POST" action="" novalidate>
                     <div class="mb-3">
                         <label for="username" class="form-label">Kullanıcı Adı</label>
-                        <input type="text" class="form-control {% if get_flashed_messages(category_filter=['danger']) and not request.form.get('username') %}is-invalid{% endif %}" id="username" name="username" value="{{ request.form.get('username', '') }}" required>
+                        {# Flask-WTF form objesi kullanıldığı varsayılarak hata gösterimi güncellendi #}
+                        <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" id="username" name="username" value="{{ form.username.data or '' }}" required>
                         <div class="invalid-feedback">
-                            Lütfen bir kullanıcı adı girin.
+                            {% for error in form.username.errors %}{{ error }}{% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-posta</label>
+                        {# Flask-WTF form objesi kullanıldığı varsayılarak hata gösterimi güncellendi #}
+                        <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" id="email" name="email" value="{{ form.email.data or '' }}" required>
+                        <div class="invalid-feedback">
+                            {% for error in form.email.errors %}{{ error }}{% endfor %}
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Şifre</label>
-                        <input type="password" class="form-control {% if get_flashed_messages(category_filter=['danger']) %}is-invalid{% endif %}" id="password" name="password" required>
+                        {# Flask-WTF form objesi kullanıldığı varsayılarak hata gösterimi güncellendi #}
+                        <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}" id="password" name="password" required>
                         <div class="invalid-feedback">
-                            Lütfen bir şifre belirleyin.
+                            {% for error in form.password.errors %}{{ error }}{% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password2" class="form-label">Şifre Tekrar</label>
+                        {# Flask-WTF form objesi kullanıldığı varsayılarak hata gösterimi güncellendi #}
+                        <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" id="password2" name="password2" required>
+                        <div class="invalid-feedback">
+                            {% for error in form.password2.errors %}{{ error }}{% endfor %}
                         </div>
                     </div>
                     <div class="d-grid mt-4">

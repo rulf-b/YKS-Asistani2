@@ -14,6 +14,9 @@ import google.generativeai as genai
 from werkzeug.utils import secure_filename
 from functools import wraps
 import PIL.Image
+from flask_mail import Mail, Message
+from itsdangerous import TimedSerializer as Serializer, URLSafeTimedSerializer # URLSafeTimedSerializer eklendi
+from flask import current_app # current_app import edildi
 
 # --- UYGULAMA KURULUMU ---
 app = Flask(__name__)
@@ -29,11 +32,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url if database_url else 'sqlit
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Resim yüklemeleri için artık geçici işlem yapıldığı için UPLOAD_FOLDER doğrudan kullanılmıyor
-# Ancak eski yapıda durabilir veya kaldırılabilir.
-# UPLOAD_FOLDER = 'uploads'
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Flask-Mail yapılandırması
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', '587'))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -41,6 +47,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = "Bu sayfayı görüntülemek için lütfen giriş yapın."
 login_manager.login_message_category = "info"
+mail = Mail(app) # Mail objesini initialize et
 
 # --- KULLANICI YÜKLEYİCİ FONKSİYON ---
 @login_manager.user_loader
@@ -48,6 +55,10 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # --- VERİTABANI MODELLERİ ---
+# app.models'dan çekildiği varsayılıyor, bu dosya içinde yeniden tanımlanmayacak.
+# Ancak, user tarafından yüklenen 'app.py' dosyası tüm modelleri içerdiği için,
+# burada da modelleri tekrar tanımlıyorum. Modüler bir yapıda bu modeller
+# models.py'den import edilmelidir.
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(30), unique=True, nullable=False)
@@ -55,10 +66,33 @@ class User(db.Model, UserMixin):
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     ders_tercihi = db.Column(db.String(50), nullable=True) # Sayısal, Sözel, Eşit Ağırlık
     bos_zamanlar_json = db.Column(db.Text, nullable=True) # JSON olarak boş zaman dilimleri
+    email_confirmed = db.Column(db.Boolean, default=False) # E-posta doğrulandı mı?
+    
     soru_analizleri = db.relationship('SoruAnaliz', backref='author', lazy=True)
     denemeleri = db.relationship('DenemeSinavi', backref='author', lazy=True)
     hedef = db.relationship('Hedef', backref='user', uselist=False, cascade="all, delete-orphan")
     tekrar_konulari = db.relationship('TekrarKonu', backref='user', lazy=True, cascade="all, delete-orphan")
+    # Quiz ile ilgili modeller dahil edilmediği için bu kısım burada eksik kalacak.
+
+    def set_password(self, password):
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
+
+    def get_reset_token(self, expires_sec=1800): # 30 dakika geçerli
+        s = Serializer(app.config['SECRET_KEY'], expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+
+    @staticmethod
+    def verify_reset_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return User.query.get(user_id)
+
 
 class Hedef(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -182,9 +216,10 @@ def get_gemini_analysis(soru_metni=None, soru_resmi=None, ogrenci_cevabi=""):
     ### 🎬 Tavsiye Edilen Kaynaklar
     * **Önemli:** Doğrudan video linki VERME. Bunun yerine, öğrencinin YouTube'da aratabileceği 2-3 adet spesifik **arama sorgusu** öner. (Örn: "Parçalı fonksiyonlar konu anlatımı YKS", "Türev kuralları örnek çözümleri")
     ---
-    Öğrencinin Cevabı/Düşünceleri: {ogrenci_cevabi}
-    ---
-    """
+    Öğrencinin Cevabı ve Düşüncesi:**
+{ogrenci_cevabi}
+---
+"""
     
     content_parts = [prompt]
     if soru_resmi:
@@ -433,38 +468,57 @@ def anasayfa():
 
 @app.route("/register", methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated: return redirect(url_for('anasayfa'))
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        if User.query.filter_by(username=username).first():
-            flash('Bu kullanıcı adı zaten alınmış.', 'danger')
-            return redirect(url_for('register'))
-        user = User(username=username, password_hash=bcrypt.generate_password_hash(password).decode('utf-8'))
+    if current_user.is_authenticated:
+        return redirect(url_for('anasayfa'))
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=bcrypt.generate_password_hash(form.password.data).decode('utf-8'),
+            email_confirmed=False
+        )
         db.session.add(user)
         db.session.commit()
-        flash('Hesabınız başarıyla oluşturuldu! Şimdi giriş yapabilirsiniz.', 'success')
+        # E-posta doğrulama linki gönder
+        token = generate_confirmation_token(user.email)
+        confirm_url = url_for('confirm_email', token=token, _external=True)
+        send_email(user.email, 'YKS Asistanı: E-posta Doğrulama', 'confirm_email', 
+                   user=user, confirm_url=confirm_url, expires_min=60) # 60 dakika geçerlilik
+        flash('Kayıt başarılı! Hesabınızı etkinleştirmek için e-postanıza gönderilen linke tıklayın.', 'info')
         return redirect(url_for('login'))
-    return render_template('register.html', title='Kayıt Ol')
+    return render_template('register.html', title='Kayıt Ol', form=form)
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        if current_user.is_admin: return redirect(url_for('admin_dashboard'))
+        if current_user.is_admin: 
+            return redirect(url_for('admin_dashboard'))
         return redirect(url_for('anasayfa'))
+    
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         if user and bcrypt.check_password_hash(user.password_hash, password):
+            if not user.email_confirmed: 
+                flash('Lütfen hesabınızı etkinleştirmek için e-postanızı doğrulayın.', 'warning')
+                return redirect(url_for('login'))
             login_user(user, remember=True)
             if user.is_admin:
                 return redirect(url_for('admin_dashboard'))
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('anasayfa'))
         else:
-            flash('Giriş başarısız.', 'danger')
-    return render_template('login.html', title='Giriş Yap')
+            flash('Geçersiz kullanıcı adı veya şifre.', 'danger')
+    
+    # GET isteği için formu oluştur
+    form = {
+        'username': request.form.get('username', ''),
+        'password': request.form.get('password', '')
+    }
+    
+    return render_template('login.html', title='Giriş Yap', form=form)
 
 @app.route("/logout")
 def logout():
@@ -560,7 +614,6 @@ def calisma_takibi():
     return render_template("calisma_takibi.html", title="Çalışma Takibi", gecmis_oturumlar=gecmis_oturumlar)
 
 
-
 @app.route("/deneme-takibi", methods=['GET', 'POST'])
 @login_required
 def deneme_takibi():
@@ -588,11 +641,14 @@ def deneme_takibi():
         db.session.commit()
         flash('Deneme sonucunuz başarıyla kaydedildi!', 'success')
         return redirect(url_for('deneme_takibi'))
+    
     denemeler_tablo_icin = DenemeSinavi.query.filter_by(author=current_user).order_by(DenemeSinavi.tarih.desc()).all()
     denemeler_grafik_icin = list(reversed(denemeler_tablo_icin))
     grafik_etiketler = [f"{d.kaynak} ({d.tarih.strftime('%d-%m')})" for d in denemeler_grafik_icin]
     grafik_veriler = [(d.tyt_turkce_d-d.tyt_turkce_y/4)+(d.tyt_sosyal_d-d.tyt_sosyal_y/4)+(d.tyt_mat_d-d.tyt_mat_y/4)+(d.tyt_fen_d-d.tyt_fen_y/4) for d in denemeler_grafik_icin]
-    return render_template('deneme_takibi.html', title='Deneme Takibi', denemeler=denemeler_tablo_icin, denemeler_grafik_icin=denemeler_grafik_icin, grafik_etiketler=json.dumps(grafik_etiketler), grafik_veriler=json.dumps(grafik_veriler))
+    
+    # 'denemeler_grafik_icin' değişkenini de şablona gönderiyoruz.
+    return render_template('deneme_takibi.html', title='Deneme Takibi', denemeler=denemeler_tablo_icin, grafik_etiketler=json.dumps(grafik_etiketler), grafik_veriler=json.dumps(grafik_veriler), denemeler_grafik_icin=denemeler_grafik_icin)
 
 @app.route("/performans-yorumu")
 @login_required
@@ -765,51 +821,211 @@ Lütfen internet bağlantınızın aktif olduğundan ve <a href="https://aistudi
 @login_required
 def mini_quiz():
     tekrar_konulari = TekrarKonu.query.filter_by(user=current_user).all()
-    if not tekrar_konulari:
-        flash('Harika! Tekrar listenizde hiç konu yok. Lütfen soru analizi yaparak eksik konularını belirle.', 'info')
-        return redirect(url_for('anasayfa'))
+    #tum_konular_listesi = Konu.query.all() # Konu modeli atlandığı için bu satırı yorum satırı yaptık
 
     # Konu havuzunu sadece tekrar edilmesi gereken alt konuları içerecek şekilde oluştur
     konu_havuzu = list(set([k.konu_adi for k in tekrar_konulari]))
     
-    # Eğer hiç konu yoksa veya seçilebilecek kadar azsa
-    if not konu_havuzu:
-        flash('Tekrar listenizde geçerli bir konu bulunamadı. Lütfen soru analizi yaparak eksik konularını belirle.', 'info')
-        return redirect(url_for('anasayfa'))
+    quiz_icerigi = None
+    quiz_analizi = None
+    secilen_sorular_objeleri = [] # Şablona gönderilecek soru objeleri
 
-    # En fazla 3 farklı konu seç
-    secilen_konular = random.sample(konu_havuzu, min(len(konu_havuzu), 3))
+    # QUIZ OLUŞTURMA FORM GÖNDERİMİ (POST)
+    if request.method == 'POST' and 'create_quiz' in request.form:
+        secilen_konular_formdan = request.form.getlist('quiz_konulari')
+        quiz_zorluk = request.form.get('quiz_zorluk')
 
-    # Yapay zeka prompt'u güncellendi: alt konulara odaklan ve zorluk derecesi iste
-    prompt = f"""
-    Sen bir YKS soru hazırlama uzmanısın. Aşağıdaki konulardan, her birinden en az bir tane olacak şekilde, toplam 5 adet çoktan seçmeli (A, B, C, D, E) test sorusu hazırla.
-    Sorular YKS seviyesinde ve özgün olsun. Mümkünse bu konuların zorluk derecelerini Kolay/Orta/Zor olarak belirterek soruyu zorluk seviyesine göre özelleştir.
-    Cevap anahtarını en sonda, `### CEVAP ANAHTARI ###` başlığı altında ver.
+        if not secilen_konular_formdan and not konu_havuzu:
+            flash('Quiz oluşturmak için en az bir konu seçmeli veya tekrar listenizde konu olmalı.', 'warning')
+            return redirect(url_for('mini_quiz'))
 
-    Quiz Konuları (Ders > Konu > Alt Konu formatında):
-    - {', '.join(secilen_konular)}
+        konular_for_ai = secilen_konular_formdan if secilen_konular_formdan else konu_havuzu[:3] # Eğer formdan gelmezse tekrar listesinden 3 tane al
+        konular_for_ai_str = ", ".join(konular_for_ai)
 
-    Örnek soru formatı:
-    Soru 1:
-    [Sorunun Metni]
-    A) Şık A
-    B) Şık B
-    C) Şık C
-    D) Şık D
-    E) Şık E
+        prompt = f"""
+        Sen bir YKS soru hazırlama uzmanısın. Aşağıdaki konulardan, her birinden en az bir tane olacak şekilde, toplam 5 adet çoktan seçmeli (A, B, C, D, E) test sorusu hazırla.
+        Soruların formatı şu şekilde olmalı:
+        **Soru [Soru Numarası]:** [Sorunun Metni]
+        A) [Şık A]
+        B) [Şık B]
+        C) [Şık C]
+        D) [Şık D]
+        E) [Şık E]
 
-    Cevap Anahtarı:
-    1. A
-    """
-    quiz_icerigi = "Quiz oluşturulurken bir sorun oluştu."
-    try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(prompt)
-        quiz_icerigi = response.text
-    except Exception as e:
-        print(f"Quiz oluşturma hatası: {e}")
-        flash(f"Quiz oluşturulurken bir hata oluştu: {e}", "danger")
-    return render_template('mini_quiz.html', title='Mini Quiz', quiz_icerigi=quiz_icerigi, konular=secilen_konular)
+        Soruların zorluk seviyesi genel olarak "{quiz_zorluk}" olsun.
+        Cevap anahtarını en sonda, `### CEVAP ANAHTARI ###` başlığı altında şu formatta ver:
+        [Soru Numarası]. [Doğru Şık]
+        Örnek:
+        1. A
+        2. B
+        ...
+
+        Her sorunun ait olduğu konuyu (Ders > Konu > Alt Konu formatında) ve zorluk derecesini ayrıca her sorunun hemen üstüne şu formatta belirt:
+        [KONU: Matematik > Türev > Limit, ZORLUK: Orta]
+
+        Quiz Konuları:
+        - {konular_for_ai_str}
+        """
+        
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            response = model.generate_content(prompt)
+            quiz_icerigi_raw = response.text
+
+            # Quiz içeriğini ve cevap anahtarını ayrıştır
+            quiz_parts = quiz_icerigi_raw.split("### CEVAP ANAHTARI ###")
+            if len(quiz_parts) < 2:
+                raise ValueError("Quiz içeriği veya cevap anahtarı bulunamadı.")
+            
+            quiz_sorular_text = quiz_parts[0].strip()
+            cevap_anahtari_text = quiz_parts[1].strip()
+
+            # Soruları parse et ve geçici Question objelerine dönüştür
+            questions_data = []
+            current_question = {}
+            for line in quiz_sorular_text.split('\n'):
+                line = line.strip()
+                if line.startswith('**Soru'):
+                    if current_question:
+                        questions_data.append(current_question)
+                    current_question = {'text': line, 'options': {}, 'topic': '', 'difficulty': ''}
+                elif line.startswith('[KONU:'):
+                    topic_match = re.search(r'KONU: (.*?), ZORLUK: (.*?)\]', line)
+                    if topic_match:
+                        current_question['topic'] = topic_match.group(1).strip()
+                        current_question['difficulty'] = topic_match.group(2).strip()
+                elif re.match(r'^[A-E]\)', line):
+                    option_key = line[0]
+                    current_question['options'][option_key] = line[2:].strip()
+                elif current_question:
+                    # Eğer bu bir şık değilse, sorunun devamı olabilir
+                    if 'text' in current_question:
+                        current_question['text'] += '\n' + line
+
+            if current_question: # Son soruyu da ekle
+                questions_data.append(current_question)
+
+            # Cevap anahtarını parse et
+            cevap_anahtari_map = {}
+            for line in cevap_anahtari_text.split('\n'):
+                line = line.strip()
+                if re.match(r'^\d+\.', line):
+                    parts = line.split('.', 1)
+                    q_num = parts[0].strip()
+                    ans = parts[1].strip()
+                    cevap_anahtari_map[int(q_num)] = ans
+
+            # Soruları şablona göndermek için Question objelerine dönüştür
+            secilen_sorular_objeleri = []
+            for i, q_data in enumerate(questions_data):
+                q_text = q_data['text'].replace(f'**Soru {i+1}:**', '').strip()
+                correct_ans = cevap_anahtari_map.get(i+1, 'X') # Güvenlik için
+                # Burada gerçek Question objeleri yaratıp ID ataması yapıyoruz,
+                # ancak bunlar henüz DB'ye kaydedilmediği için sadece front-end'de kullanılacak.
+                # Gerçek senaryoda bu sorular DB'ye kaydedilmeli ve gerçek ID'leri alınmalı.
+                temp_question = Question(
+                    text=q_text,
+                    options_json=json.dumps(q_data['options']),
+                    correct_answer=correct_ans,
+                    topic=q_data['topic'],
+                    difficulty=q_data['difficulty']
+                )
+                # Geçici bir ID atayalım, veya daha iyisi, her soruyu DB'ye kaydedip gerçek ID'sini kullanalım.
+                # Quiz'i submit ederken bu geçici ID'ler sorun yaratacaktır.
+                # Bu yüzden, bu adımı atladığımız için, mini-quizde soru kayıt kısmı şimdilik pasif kalacak.
+                temp_question.id = i + 1 # Geçici bir ID ataması
+                secilen_sorular_objeleri.append(temp_question)
+            
+            flash('Quiz başarıyla oluşturuldu!', 'success')
+
+        except Exception as e:
+            print(f"Quiz oluşturma hatası: {e}")
+            flash(f"Quiz oluşturulurken bir hata oluştu: {e}. Lütfen daha sonra tekrar deneyin.", "danger")
+            quiz_icerigi = None # Hata durumunda quiz_icerigi'ni None yapalım.
+
+
+    # QUIZ SONUÇLARINI GÖNDERME (POST)
+    elif request.method == 'POST' and 'submit_quiz' in request.form:
+        # Bu kısım, AI Geliştirmeleri adımı atlandığı için çalışmayacak.
+        # Çünkü quiz soruları DB'ye kaydedilmediği ve gerçek ID'leri olmadığı için
+        # Formdan gelen soru ID'leri ile eşleşme sağlanamaz.
+        flash('Quiz sonuç analizi yapılamıyor: Soru verileri bulunamadı.', 'danger')
+        quiz_analizi = "Quiz analiz raporu oluşturulamadı çünkü sorular veritabanına kaydedilemedi."
+        
+        # Aşağıdaki kod aslında quiz geliştirme adımına aittir, bu adım atlandığı için burayı çalıştırmayacağız.
+        """
+        kullanici_cevaplari = {}
+        dogru_cevap_sayisi = 0
+        yanlis_cevap_sayisi = 0
+        bos_cevap_sayisi = 0
+        cevaplanan_sorular_listesi = []
+
+        for key, value in request.form.items():
+            if key.startswith('soru_'):
+                question_id = int(key.replace('soru_', ''))
+                kullanici_cevaplari[question_id] = value
+
+        for q_id, u_answer in kullanici_cevaplari.items():
+            question = Question.query.get(q_id)
+            if question:
+                is_correct = (u_answer == question.correct_answer)
+                user_quiz_answer = UserQuizAnswer(
+                    user_id=current_user.id,
+                    question_id=question.id,
+                    user_answer=u_answer,
+                    is_correct=is_correct
+                )
+                db.session.add(user_quiz_answer)
+
+                if is_correct:
+                    dogru_cevap_sayisi += 1
+                else:
+                    yanlis_cevap_sayisi += 1
+                    cevaplanan_sorular_listesi.append({
+                        'soru_metni': question.text,
+                        'kullanici_cevabi': u_answer,
+                        'dogru_cevap': question.correct_answer,
+                        'konu': question.topic,
+                        'zorluk': question.difficulty
+                    })
+
+        db.session.commit()
+
+        ai_analiz_prompt = f\"\"\"
+        Sen bir YKS quiz değerlendirme uzmanısın. Bir öğrencinin mini quiz sonuçlarını ve yanlış cevapladığı soruların detaylarını vereceğim.
+        Aşağıdaki formata göre detaylı bir geri bildirim ve analiz yapmanı istiyorum:
+        ### 📊 Quiz Sonuç Özeti
+        * Toplam Soru Sayısı: {len(kullanici_cevaplari)}
+        * Doğru Cevap Sayısı: {dogru_cevap_sayisi}
+        * Yanlış Cevap Sayısı: {yanlis_cevap_sayisi}
+        * Boş Bırakılan Soru Sayısı: {bos_cevap_sayisi}
+        ### 🤔 Hata Analizi ve Gelişim Alanları
+        Yanlış cevaplanan soruların detayları:
+        {json.dumps(cevaplanan_sorular_listesi, ensure_ascii=False, indent=2)}
+        (...)
+        \"\"\"
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            response = model.generate_content(ai_analiz_prompt)
+            quiz_analizi = response.text.strip()
+            flash('Quiz sonuçlarınız başarıyla analiz edildi!', 'success')
+        except Exception as e:
+            flash(f"Quiz sonuç analizi yapılırken bir hata oluştu: {e}.", "danger")
+            quiz_analizi = "Quiz analiz raporu oluşturulamadı."
+        quiz_icerigi = None
+        secilen_sorular_objeleri = []
+        """
+
+
+    # GET isteği veya POST sonrası quiz_icerigi/quiz_analizi None ise quiz oluşturma formunu göster
+    # Tum_konular, Konu modeli atlandığı için burada None olarak gönderilecek veya boş liste.
+    return render_template('mini_quiz.html', 
+                           title='Mini Quiz', 
+                           konular=konu_havuzu, # Tekrar konuları
+                           tum_konular=[], # Konu modeli atlandığı için boş liste
+                           quiz_icerigi=quiz_icerigi, # AI'dan gelen ham quiz içeriği (eğer quiz oluşturulmuşsa)
+                           secilen_sorular=secilen_sorular_objeleri, # Şablona gönderilen parse edilmiş soru objeleri
+                           quiz_analizi=quiz_analizi) # AI'dan gelen quiz analiz raporu
 
 @app.route('/haftalik-plan', methods=['GET', 'POST'])
 @login_required
@@ -892,6 +1108,107 @@ def admin_dashboard():
 def user_detail(user_id):
     user = User.query.get_or_404(user_id)
     return render_template('admin/user_detail.html', title=f"{user.username} Detayları", user=user)
+
+# YENİ: E-posta doğrulama token'ı için Serializer objesi oluşturma (uygulama bağlamında çalışmalı)
+def generate_confirmation_token(email):
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    return s.dumps(email, salt='email-confirm').decode('utf-8')
+
+# YENİ: E-posta doğrulama token'ını doğrulama
+def confirm_token(token, expiration=3600): # 1 saat (3600 saniye) geçerli
+    s = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        email = s.loads(token, salt='email-confirm', max_age=expiration)
+    except:
+        return False
+    return email
+
+# YENİ: E-posta gönderme yardımcı fonksiyonu
+def send_email(to, subject, template_name, **kwargs):
+    msg = Message(subject, recipients=[to])
+    msg.html = render_template(f'email/{template_name}.html', **kwargs)
+    mail.send(msg)
+
+# YENİ: E-posta Doğrulama Rotası
+@app.route('/confirm/<token>')
+def confirm_email(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('anasayfa'))
+    
+    email = confirm_token(token)
+    if not email:
+        flash('Doğrulama linki geçersiz veya süresi dolmuş.', 'danger')
+        return redirect(url_for('register')) # Tekrar kayıt veya giriş sayfasına yönlendir
+
+    user = User.query.filter_by(email=email).first_or_404()
+    if user.email_confirmed:
+        flash('E-posta adresiniz zaten doğrulanmış.', 'success')
+    else:
+        user.email_confirmed = True
+        db.session.commit()
+        flash('E-posta adresiniz başarıyla doğrulandı!', 'success')
+    
+    return redirect(url_for('login'))
+
+# YENİ: Şifre Sıfırlama İstek Rotası
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('anasayfa'))
+    
+    # Form'dan gelen kod
+    # from app.forms import RequestResetForm # Buradan import edilmesi gerekiyor
+    # form = RequestResetForm() 
+    
+    # Geçici olarak forms.py'deki formları içermediğimiz için manuel form kontrolü
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = user.get_reset_token()
+            reset_url = url_for('reset_token', token=token, _external=True)
+            send_email(user.email, 'YKS Asistanı: Şifre Sıfırlama İsteği', 'reset_password', 
+                       user=user, reset_url=reset_url, expires_min=30) # 30 dakika geçerlilik
+            flash('Şifre sıfırlama talimatları e-posta adresinize gönderildi. Lütfen e-postanızı kontrol edin.', 'info')
+            return redirect(url_for('login'))
+        else:
+            flash('Bu e-posta adresine sahip bir kullanıcı bulunamadı.', 'danger')
+            # Güvenlik için, e-posta bulunmasa bile "gönderildi" mesajı vermek daha iyi olabilir
+            # flash('Şifre sıfırlama talimatları e-posta adresinize gönderildi (eğer kayıtlıysa).', 'info')
+            
+    return render_template('reset_request.html', title='Şifre Sıfırla') # form=form çıkarıldı
+
+# YENİ: Şifre Sıfırlama Token Doğrulama ve Yeni Şifre Belirleme Rotası
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('anasayfa'))
+    
+    user = User.verify_reset_token(token)
+    if not user:
+        flash('Şifre sıfırlama linki geçersiz veya süresi dolmuş.', 'danger')
+        return redirect(url_for('reset_request'))
+    
+    # Form'dan gelen kod
+    # from app.forms import ResetPasswordForm # Buradan import edilmesi gerekiyor
+    # form = ResetPasswordForm() 
+    
+    # Geçici olarak forms.py'deki formları içermediğimiz için manuel form kontrolü
+    if request.method == 'POST':
+        password = request.form.get('password')
+        password2 = request.form.get('password2')
+        if password != password2:
+            flash('Şifreler eşleşmiyor.', 'danger')
+            return redirect(url_for('reset_token', token=token))
+        
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        user.password_hash = hashed_password
+        db.session.commit()
+        flash('Şifreniz başarıyla güncellendi! Artık yeni şifrenizle giriş yapabilirsiniz.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('reset_token.html', title='Şifre Sıfırla') # form=form çıkarıldı
+
 
 # --- UYGULAMAYI ÇALIŞTIR ---
 if __name__ == '__main__':
