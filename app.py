@@ -17,6 +17,7 @@ import PIL.Image
 from flask_mail import Mail, Message
 from itsdangerous import TimedSerializer as Serializer, URLSafeTimedSerializer # URLSafeTimedSerializer eklendi
 from flask import current_app # current_app import edildi
+from forms import LoginForm
 
 # --- UYGULAMA KURULUMU ---
 app = Flask(__name__)
@@ -495,29 +496,20 @@ def login():
         if current_user.is_admin: 
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('anasayfa'))
-    
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        if user and bcrypt.check_password_hash(user.password_hash, password):
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and bcrypt.check_password_hash(user.password_hash, form.password.data):
             if not user.email_confirmed: 
                 flash('Lütfen hesabınızı etkinleştirmek için e-postanızı doğrulayın.', 'warning')
                 return redirect(url_for('login'))
-            login_user(user, remember=True)
+            login_user(user, remember=form.remember_me.data)
             if user.is_admin:
                 return redirect(url_for('admin_dashboard'))
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('anasayfa'))
         else:
             flash('Geçersiz kullanıcı adı veya şifre.', 'danger')
-    
-    # GET isteği için formu oluştur
-    form = {
-        'username': request.form.get('username', ''),
-        'password': request.form.get('password', '')
-    }
-    
     return render_template('login.html', title='Giriş Yap', form=form)
 
 @app.route("/logout")
