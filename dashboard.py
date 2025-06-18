@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify
-from .models import Performance
+# Modeller doğrudan models.py'de tanımlıdır
+from models import Performance
 
 dashboard_bp = Blueprint('dashboard', __name__)
 

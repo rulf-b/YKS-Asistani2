@@ -35,12 +35,18 @@ class User(db.Model, UserMixin):
 
     def get_reset_token(self, expires_sec=600):
         self.reset_token_used = False
-        s = URLSafeTimedSerializer(os.getenv('SECRET_KEY', 'varsayilan-gizli-anahtar'))
+        secret = os.getenv('SECRET_KEY')
+        if not secret:
+            raise RuntimeError('SECRET_KEY ortam değişkeni tanımsız.')
+        s = URLSafeTimedSerializer(secret)
         return s.dumps({'user_id': self.id}, salt='reset-password')
 
     @staticmethod
     def verify_reset_token(token):
-        s = URLSafeTimedSerializer(os.getenv('SECRET_KEY', 'varsayilan-gizli-anahtar'))
+        secret = os.getenv('SECRET_KEY')
+        if not secret:
+            raise RuntimeError('SECRET_KEY ortam değişkeni tanımsız.')
+        s = URLSafeTimedSerializer(secret)
         try:
             user_id = s.loads(token, salt='reset-password', max_age=600)['user_id']
         except:

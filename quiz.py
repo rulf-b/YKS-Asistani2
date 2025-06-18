@@ -1,6 +1,7 @@
 import random
 from flask import Blueprint, render_template
-from .models import Question, Performance
+# Modelleri doğrudan models modülünden alıyoruz
+from models import Question, Performance
 
 quiz_bp = Blueprint('quiz', __name__)
 

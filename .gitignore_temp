@@ -25,6 +25,7 @@ venv/
 ENV/
 
 # Database
+# Veritabanı dosyaları depoda tutulmamalı.
 *.db
 *.sqlite3
 
@@ -43,4 +44,4 @@ instance/
 
 # Uploads
 uploads/*
-!uploads/.gitkeep 
+!uploads/.gitkeep

@@ -1,517 +1,276 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - YKS Koçu</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <meta name="description" content="YKS Asistanı - Kişiselleştirilmiş YKS hazırlık platformu">
+    <title>YKS Asistanı - {% block title %}{% endblock %}</title>
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="/static/css/style.css" rel="stylesheet">
-    <script defer src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
-    <script defer src="/static/js/theme.js"></script>
-    <style>
-        /* CSS Değişkenleri (Renk Paleti) */
-        :root {
-            --primary-soft: #6c7cd2; /* Daha yumuşak bir ana renk */
-            --primary-dark: #4a59a7; /* Hover için daha koyu ton */
-            --secondary-light: #e6e9f0; /* Açık gri tonları */
-            --text-dark: #333;
-            --text-light: #555;
-            --bg-light: #f8faff; /* Çok hafif mavi/gri arka plan */
-            --card-bg: #ffffff;
-            --border-color: #e0e4eb;
-            --success-soft: #28a745; /* Varsayılan Bootstrap yeşili, yumuşak kullanılabilir */
-            --danger-soft: #dc3545; /* Varsayılan Bootstrap kırmızısı */
-            --warning-soft: #ffc107; /* Varsayılan Bootstrap sarısı */
-            --info-soft: #17a2b8; /* Varsayılan Bootstrap mavimsi yeşil */
-        }
-
-        body {
-            font-family: 'Inter', sans-serif; /* Gövde metni için Inter */
-            background-color: var(--bg-light);
-            color: var(--text-dark);
-            line-height: 1.6;
-            /* background-image: linear-gradient(135deg, var(--bg-light) 0%, #eef1f6 100%); */ /* İsteğe bağlı hafif degrade */
-            overflow-x: hidden; /* Yatay kaydırmayı engelle */
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Poppins', sans-serif; /* Başlıklar için Poppins */
-            color: var(--text-dark);
-            font-weight: 600; /* Biraz daha kalın başlıklar */
-            margin-bottom: 1.5rem; /* Başlıklar arası boşluk */
-        }
-
-        p {
-            margin-bottom: 1rem;
-        }
-
-        /* Navbar Stili */
-        .navbar {
-            background-color: var(--primary-soft) !important;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Yumuşak gölge */
-            border-bottom: 1px solid var(--primary-dark);
-            padding: 1rem 0; /* Navbar yüksekliğini ayarla */
-        }
-        .navbar-brand {
-            font-weight: 700; /* Daha belirgin marka adı */
-            font-size: 1.6rem;
-            color: #fff !important;
-        }
-        .navbar-nav .nav-link {
-            color: rgba(255, 255, 255, 0.85) !important;
-            font-weight: 500;
-            transition: color 0.3s ease, transform 0.2s ease;
-        }
-        .navbar-nav .nav-link:hover {
-            color: #fff !important;
-            transform: translateY(-2px); /* Hafif yukarı çıkma efekti */
-        }
-        .navbar-nav .nav-link.active {
-            color: #fff !important;
-            border-bottom: 2px solid #fff;
-        }
-        .navbar-toggler {
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-        .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-        }
-
-
-        /* Kart Stilleri */
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px; /* Daha yuvarlak köşeler */
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07); /* Güncellenmiş gölge */
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Yumuşak geçiş */
-            border: none; /* Kenarlık kaldırma */
-        }
-        .card:hover {
-            transform: translateY(-8px); /* Hafif yukarı kalkma */
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12) !important; /* Güncellenmiş hover gölgesi */
-        }
-        .card-header {
-            background-color: var(--secondary-light);
-            border-bottom: 1px solid var(--border-color);
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-            padding: 1.2rem 1.5rem;
-            font-size: 1.1rem;
-        }
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        /* Buton Stilleri */
-        .btn {
-            border-radius: 8px; /* Daha yuvarlak butonlar */
-            padding: 0.8rem 1.5rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .btn-primary {
-            background-color: var(--primary-soft);
-            border-color: var(--primary-soft);
-        }
-        .btn-primary:hover {
-            background-color: var(--primary-dark);
-            border-color: var(--primary-dark);
-            box-shadow: 0 4px 12px rgba(108, 124, 210, 0.4);
-        }
-        .btn-primary:active { /* Yeni efekt */
-            transform: translateY(1px);
-            box-shadow: 0 2px 8px rgba(108, 124, 210, 0.3) inset;
-        }
-        .btn-outline-primary {
-            color: var(--primary-soft);
-            border-color: var(--primary-soft);
-        }
-        .btn-outline-primary:hover {
-            background-color: var(--primary-soft);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(108, 124, 210, 0.4);
-        }
-        /* Diğer renkli butonlar için de benzer soft stiller uygulanabilir */
-        .btn-success { background-color: var(--success-soft); border-color: var(--success-soft); }
-        .btn-success:hover { background-color: #218838; border-color: #1e7e34; box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4); }
-        .btn-warning { background-color: var(--warning-soft); border-color: var(--warning-soft); }
-        .btn-warning:hover { background-color: #e0a800; border-color: #d39e00; box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4); }
-
-        /* Form Kontrolleri */
-        .form-control, .form-select { /* select için de geçerli */
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            padding: 0.8rem 1rem;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary-dark);
-            box-shadow: 0 0 0 0.3rem rgba(108, 124, 210, 0.3); /* Biraz daha belirgin parlama */
-            outline: 0;
-        }
-
-        /* Flash Mesajları (Alerts) */
-        .alert {
-            border-radius: 8px;
-            padding: 1rem 1.5rem;
-            margin-top: 1rem;
-            margin-bottom: 2rem; /* Daha fazla boşluk */
-            font-weight: 500;
-        }
-        .alert-success { background-color: rgba(40, 167, 69, 0.1); color: var(--success-soft); border-color: var(--success-soft); }
-        .alert-danger { background-color: rgba(220, 53, 69, 0.1); color: var(--danger-soft); border-color: var(--danger-soft); }
-        .alert-warning { background-color: rgba(255, 193, 7, 0.1); color: var(--warning-soft); border-color: var(--warning-soft); }
-        .alert-info { background-color: rgba(23, 162, 184, 0.1); color: var(--info-soft); border-color: var(--info-soft); }
-
-
-        /* Genel Boşluklar */
-        .container {
-            padding-top: 2rem;
-            padding-bottom: 3rem;
-        }
-        .mb-4 { margin-bottom: 2rem !important; } /* Varsayılan Bootstrap'ten biraz daha fazla */
-        .my-4 { margin-top: 2rem !important; margin-bottom: 2rem !important; }
-
-        /* Icon büyüklüğü ve rengi (istek üzerine eklendi) */
-        .bi {
-            vertical-align: -0.125em; /* Metinle daha iyi hizalama */
-            font-size: 1.1em; /* İkonları biraz daha büyük yap */
-            margin-right: 0.3em; /* Metinle arasına boşluk */
-        }
-        .navbar-brand .bi { margin-right: 0.5em; }
-
-        /* darken fonksiyonu CSS'te doğrudan çalışmaz, elle tonları belirledik */
-        /* Bu yüzden yukarıdaki btn-success:hover gibi yerlerde darken yazısını elle değiştirdim */
-
-        /* Yeni Eklenen Efektler */
-
-        /* Tablo Satırı Vurgulama */
-        .table-hover tbody tr {
-            transition: background-color 0.2s ease, transform 0.1s ease;
-        }
-        .table-hover tbody tr:hover {
-            background-color: var(--secondary-light);
-            cursor: pointer;
-            transform: translateY(-2px); /* Hafif yukarı kalkma */
-        }
-
-        /* Liste Öğesi Vurgulama (Anasayfa için) */
-        .list-group-item {
-            transition: all 0.3s ease;
-            border: none;
-            background-color: transparent;
-        }
-        .list-group-item:hover {
-            background-color: var(--secondary-light);
-            transform: translateX(5px);
-        }
-
-        /* Akordeon Başlık Efektleri */
-        .accordion-button {
-            transition: all 0.3s ease-in-out;
-        }
-        .accordion-button.collapsed {
-            background-color: var(--card-bg); /* Kapalıyken kart rengi */
-            color: var(--text-dark);
-        }
-        .accordion-button:not(.collapsed) {
-            background-color: var(--primary-soft); /* Açıkken ana renk */
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            border-bottom-left-radius: 0; /* Açıkken alt köşeleri düzelt */
-            border-bottom-right-radius: 0;
-        }
-        .accordion-button:hover {
-            background-color: var(--primary-dark); /* Hover'da daha koyu */
-            color: white;
-        }
-        .accordion-item {
-            border: none; /* Varsayılan Bootstrap borderını kaldır */
-            margin-bottom: 10px; /* Akordeon öğeleri arasında boşluk */
-            border-radius: 12px; /* Köşeleri yuvarla */
-            overflow: hidden; /* İçerik taşmasını engelle */
-        }
-        .accordion-body {
-            background-color: #f8f9fa; /* Hafif bir arka plan rengi */
-            border-top: 1px solid var(--border-color);
-            border-bottom-left-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
-        /* Form grupları için daha iyi boşluk */
-        .mb-4 label {
-            margin-bottom: .5rem;
-        }
-
-        /* AI Geri Bildirim ve Hedef Analizi kutuları için stil */
-        .analiz-sonucu.card { /* Mevcut style'a ek olarak */
-            border-left: 5px solid var(--success-soft);
-        }
-
-        /* Loading Overlay */
-        #loadingOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        #loadingOverlay.show {
-            display: flex;
-        }
-
-        #loadingOverlay .spinner-border {
-            width: 3rem;
-            height: 3rem;
-            color: var(--primary-soft);
-        }
-
-        /* Fade-in animasyonu */
-        .animate-fade-in {
-            animation: fadeIn 0.6s ease-in-out forwards;
-            opacity: 0;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Minimalist Başarı Toast Bildirimi */
-        .toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1050; /* Bootstrap toast z-index'i */
-        }
-
-        .custom-toast.toast {
-            border: none;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            background-color: var(--success-soft); /* Başarı rengi */
-            color: white;
-            animation: slideInFromRight 0.5s ease-out forwards, fadeOut 0.5s ease-in 2.5s forwards; /* Kayma ve solma animasyonları */
-        }
-
-        .custom-toast.toast-header {
-            background-color: var(--success-soft);
-            color: white;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            font-weight: bold;
-        }
-        
-        .custom-toast.toast-header .btn-close {
-            filter: invert(1); /* Kapatma ikonunu beyaz yap */
-        }
-
-        .custom-toast.toast-body {
-            color: white;
-        }
-
-        @keyframes slideInFromRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
-            }
-            to {
-                opacity: 0;
-            }
-        }
-
-        /* YENİ: Duyarlı Tasarım İçin Tablo İyileştirmeleri */
-        /* Geniş tablolarda yatay kaydırma çubuğu */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* iOS için yumuşak kaydırma */
-        }
-
-        /* Küçük ekranlarda tablo başlıklarını görünür tutma (isteğe bağlı) */
-        @media (max-width: 768px) {
-            .table.table-bordered th, .table.table-bordered td {
-                white-space: nowrap; /* Hücre içeriğinin tek satırda kalmasını sağlar */
-            }
-        }
-
-        /* Başa Dön Butonu */
-        #backToTop {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background-color: var(--primary-soft);
-            color: #fff;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 1040;
-        }
-
-        #backToTop.show {
-            display: flex;
-        }
-
-        #backToTop:hover {
-            background-color: var(--primary-dark);
-            color: #fff;
-        }
-    </style>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- AOS - Animate On Scroll -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    {# YÜKLEME OVERLAY'İ #}
-    <div id="loadingOverlay">
-        <div class="spinner-border" role="status">
-            <span class="visually-hidden">Yükleniyor...</span>
-        </div>
-    </div>
-
-    {# Başarı Toast Bildirimi Kapsayıcısı #}
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="successToast" class="toast custom-toast hide" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header custom-toast-header">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                <strong class="me-auto">Başarılı!</strong>
-                <small>Şimdi</small>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body" id="toastMessageBody">
-                İşlem başarıyla tamamlandı.
-            </div>
-        </div>
-    </div>
-
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/"><i class="bi bi-mortarboard"></i> YKS Asistanı</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid px-lg-5">
+            <a class="navbar-brand" href="{{ url_for('anasayfa') }}">
+                YKS<span class="text-primary">.</span>
+            </a>
+            
+            <button class="navbar-toggler border-0 shadow-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                    <li class="nav-item"><a class="nav-link" href="/">Ana Sayfa</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/soru-analizi">Soru Analizi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/deneme_takibi">Deneme Takibi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/calisma-takibi">Çalışma Takibi</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/hedef_belirle">Hedef</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/login"><i class="bi bi-box-arrow-in-right"></i> Giriş</a></li>
-                    <li class="nav-item d-flex align-items-center ms-3">
-                        <!-- Tema düğmesi -->
-                        <div class="form-check form-switch m-0">
-                            <input class="form-check-input" type="checkbox" id="themeToggle">
-                        </div>
+                <ul class="navbar-nav mx-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'anasayfa' %}active{% endif %}" href="{{ url_for('anasayfa') }}">
+                                Ana Sayfa
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'hedef_belirle' %}active{% endif %}" href="{{ url_for('hedef_belirle') }}">
+                                Hedefler
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'calisma_takibi' %}active{% endif %}" href="{{ url_for('calisma_takibi') }}">
+                                Çalışma Takibi
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'deneme_takibi' %}active{% endif %}" href="{{ url_for('deneme_takibi') }}">
+                                Deneme Takibi
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+                
+                <ul class="navbar-nav align-items-center gap-3">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <button class="btn btn-icon" id="notificationButton" data-bs-toggle="dropdown">
+                                <i class="bi bi-bell"></i>
+                                <span class="notification-badge">2</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end notification-dropdown">
+                                <div class="notification-header">
+                                    <h6 class="mb-0">Bildirimler</h6>
+                                    <small class="text-muted">2 yeni bildirim</small>
+                                </div>
+                                <div class="notification-body">
+                                    <a href="#" class="dropdown-item">
+                                        <div class="icon-wrapper bg-primary-soft text-primary">
+                                            <i class="bi bi-calendar-check"></i>
+                                        </div>
+                                        <div class="notification-text">
+                                            <p class="mb-0">Günlük hedefini tamamladın!</p>
+                                            <small class="text-muted">5 dakika önce</small>
+                                        </div>
+                                    </a>
+                                    <a href="#" class="dropdown-item">
+                                        <div class="icon-wrapper bg-warning-soft text-warning">
+                                            <i class="bi bi-lightbulb"></i>
+                                        </div>
+                                        <div class="notification-text">
+                                            <p class="mb-0">Yeni bir quiz hazır!</p>
+                                            <small class="text-muted">1 saat önce</small>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="notification-footer">
+                                    <a href="#" class="dropdown-item text-center">
+                                        Tüm bildirimleri gör
+                                    </a>
+                                </div>
+                            </div>
+                        </li>
+                        
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
+                                <div class="avatar">
+                                    <img src="{{ url_for('static', filename='img/default-avatar.png') }}" alt="Profil">
+                                </div>
+                                <span>{{ current_user.username }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('hedef_belirle') }}">
+                                        <i class="bi bi-person"></i>
+                                        <span>Profilim</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bi bi-gear"></i>
+                                        <span>Ayarlar</span>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{{ url_for('logout') }}">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                        <span>Çıkış Yap</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('login') }}">
+                                Giriş Yap
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-dark" href="{{ url_for('register') }}">
+                                Kayıt Ol
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="nav-item">
+                        <button class="btn btn-icon theme-toggle" id="theme-toggle" title="Tema Değiştir">
+                            <i class="bi bi-sun-fill"></i>
+                        </button>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Navbar yüksekliği kadar boşluk -->
-    <div style="height: 80px;"></div>
-
-    <main class="container">
-        {% block content %}{% endblock content %}
+    <!-- Ana İçerik -->
+    <main class="flex-grow-1">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="toast-container position-fixed top-0 end-0 p-3">
+                    {% for category, message in messages %}
+                        <div class="toast show" role="alert">
+                            <div class="toast-header">
+                                <i class="bi {% if category == 'success' %}bi-check-circle text-success{% elif category == 'danger' %}bi-exclamation-circle text-danger{% else %}bi-info-circle text-info{% endif %} me-2"></i>
+                                <strong class="me-auto">Bildirim</strong>
+                                <small class="text-muted">şimdi</small>
+                                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                            </div>
+                            <div class="toast-body">
+                                {{ message }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
     </main>
-    <button id="backToTop" class="btn" aria-label="Başa dön">
-        <i class="bi bi-arrow-up"></i>
-    </button>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container-fluid px-lg-5">
+            <div class="row g-4 py-4">
+                <div class="col-lg-4">
+                    <div class="footer-brand mb-3">
+                        YKS<span class="text-primary">.</span>
+                    </div>
+                    <p class="text-muted mb-0">YKS hazırlık sürecinde yanınızdayız. Hedeflerinize ulaşmanız için size özel çalışma planı ve analizler sunuyoruz.</p>
+                </div>
+                
+                <div class="col-sm-6 col-lg-2">
+                    <h6 class="fw-bold mb-3">Hızlı Erişim</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="{{ url_for('anasayfa') }}">Ana Sayfa</a></li>
+                        <li><a href="{{ url_for('hedef_belirle') }}">Hedefler</a></li>
+                        <li><a href="{{ url_for('calisma_takibi') }}">Çalışma Takibi</a></li>
+                        <li><a href="{{ url_for('deneme_takibi') }}">Deneme Takibi</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-sm-6 col-lg-2">
+                    <h6 class="fw-bold mb-3">Destek</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><a href="#">Yardım Merkezi</a></li>
+                        <li><a href="#">SSS</a></li>
+                        <li><a href="#">İletişim</a></li>
+                        <li><a href="#">Geri Bildirim</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-4">
+                    <h6 class="fw-bold mb-3">Bülten</h6>
+                    <p class="text-muted mb-3">YKS ile ilgili güncel bilgiler ve öneriler için bültenimize abone olun.</p>
+                    <form class="newsletter-form">
+                        <div class="input-group">
+                            <input type="email" class="form-control" placeholder="E-posta adresiniz">
+                            <button class="btn btn-dark" type="submit">Abone Ol</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <div class="row py-3 align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="mb-0">&copy; {{ current_year }} YKS Asistanı. Tüm hakları saklıdır.</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <ul class="list-inline mb-0">
+                        <li class="list-inline-item">
+                            <a href="#">Gizlilik Politikası</a>
+                        </li>
+                        <li class="list-inline-item">
+                            <span class="text-muted">•</span>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">Kullanım Şartları</a>
+                        </li>
+                        <li class="list-inline-item">
+                            <span class="text-muted">•</span>
+                        </li>
+                        <li class="list-inline-item">
+                            <a href="#">KVKK</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AOS JS -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <!-- Theme Toggle JS -->
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <!-- Custom JS -->
     <script>
-        // Sayfa yükleme spinner'ı fonksiyonları
-        function showLoadingSpinner() {
-            document.getElementById('loadingOverlay').classList.add('show');
-        }
-
-        function hideLoadingSpinner() {
-            document.getElementById('loadingOverlay').classList.remove('show');
-        }
-
-        // Tüm form gönderimlerinde spinner'ı göstermek için
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function() {
-                if (this.method.toLowerCase() !== 'get') {
-                    showLoadingSpinner();
-                }
+        // AOS Başlatma
+        AOS.init({
+            duration: 800,
+            once: true
+        });
+        
+        // Toast Mesajları
+        var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+        var toastList = toastElList.map(function(toastEl) {
+            return new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 5000
             });
         });
-
-        // Sayfa tamamen yüklendiğinde spinner'ı gizle
-        window.addEventListener('load', hideLoadingSpinner);
-        window.addEventListener('pageshow', function(event) {
-            if (event.persisted) {
-                hideLoadingSpinner();
-            }
-        });
-
-
-        // Başarı Toast Bildirimi Fonksiyonu
-        function showCustomSuccessToast(message = "İşlem başarıyla tamamlandı!") {
-            const toastElement = document.getElementById('successToast');
-            const toastBody = document.getElementById('toastMessageBody');
-            toastBody.textContent = message; // Mesajı dinamik olarak ayarla
-            const toast = new bootstrap.Toast(toastElement);
-            toast.show();
-        }
-
-        // Hoş Geldin Animasyonu (Anasayfa'ya özel)
-        document.addEventListener('DOMContentLoaded', function() {
-            const mainContent = document.querySelector('main .container');
-            if (mainContent && (window.location.pathname === '/' || window.location.pathname === '/anasayfa')) {
-                mainContent.querySelectorAll('h1, h2, h3, h4, h5, p, .card, .alert, .btn, .list-group-item').forEach((element, index) => {
-                    element.style.animationDelay = `${index * 0.05}s`; 
-                    element.classList.add('animate-fade-in');
-                });
-            }
-
-            // Flash mesajlarını dinle ve 'success' ise onay Toast'unu göster
-            const flashMessages = document.querySelectorAll('.alert[data-show-toast="true"]');
-            flashMessages.forEach(msg => {
-                // Flash mesajını alıp Toast'a gönder
-                const messageText = msg.textContent.trim();
-                showCustomSuccessToast(messageText);
-                // Flash mesajı göründükten sonra, bu animasyonu tekrar tetiklememek için attribute kaldırılabilir
-                msg.removeAttribute('data-show-toast'); 
-                // Opsiyonel: Flash mesajını anında gizle (toast gösterildiği için)
-                // msg.classList.remove('show'); 
-                // msg.remove(); // Veya tamamen kaldırabilirsiniz.
-            });
-        });
-
     </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

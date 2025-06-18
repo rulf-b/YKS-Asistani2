@@ -9,7 +9,7 @@ from flask import Blueprint
 # Eğer bu dosya bir blueprint ise, app objesi Flask'ta farklı şekilde erişilir.
 # Basitlik adına, app.py'ye benzer importları burada da tutalım.
 from app import mail, db, app # app objesini de import ettik
-from app.models import User, TekrarKonu # Performance yerine TekrarKonu kullanacağız
+from models import User, TekrarKonu # Performance yerine TekrarKonu kullanacağız
 
 # app objesi Flask-Mail ile initialize edildiği için app context'i gerekli
 with app.app_context():

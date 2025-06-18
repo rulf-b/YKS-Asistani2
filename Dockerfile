@@ -16,7 +16,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create uploads directory
-RUN mkdir -p uploads && chmod 777 uploads
+RUN adduser --disabled-password appuser \
+    && mkdir -p uploads \
+    && chown appuser:appuser uploads \
+    && chmod 755 uploads
+
+USER appuser
 
 # Expose port
 EXPOSE 8000

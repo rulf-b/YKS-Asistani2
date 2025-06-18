@@ -35,7 +35,7 @@ def dashboard_data():
     return jsonify(data)
 
 def load_questions():
-    from app.models import Question
+    from models import Question
     return Question.query.all()
 
 @enhancements_bp.route('/quiz')

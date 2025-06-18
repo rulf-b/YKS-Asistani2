@@ -1,4 +1,10 @@
-from app import app, db
+from flask import Flask
+from models import db
+from config import Config
+
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
 # Bu script, veritabanı tablolarını oluşturmak için kullanılır.
 print("Veritabanı tabloları oluşturuluyor...")

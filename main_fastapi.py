@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File, Form, Request
 from fastapi.security import HTTPBearer
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -109,7 +110,23 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="YKS Asistanı v2.0", version="2.0.0")
 
 # --- Middleware ---
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers['Content-Security-Policy'] = "default-src 'self'"
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains'
+        return response
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://yks.example.com"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+app.add_middleware(SecurityHeadersMiddleware)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- Pydantic Modelleri ---
@@ -131,7 +148,10 @@ class TokenData(BaseModel):
 
 # --- Güvenlik ve Yardımcı Fonksiyonlar ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SECRET_KEY = os.getenv("SECRET_KEY", "gizli_anahtar_yoksa_burasi_calisir_ama_degistir")
+# .env dosyasında güçlü bir SECRET_KEY tanımlanmalıdır
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY ortam değişkeni tanımsız.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 1 hafta
 

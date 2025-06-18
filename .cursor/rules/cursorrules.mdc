@@ -1,0 +1,55 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Code Documentation
+Do not explain the purpose and function of every piece of code in detail.
+Do not state which problem the code solves, how it works, or in which scenarios it should be used.
+Especially for complex functions and algorithms, do not include example use cases.
+
+Isolation and File Integrity
+When editing or creating code, modify only the relevant file and code blocks.
+Do not interfere with other files or parts of the code that are not directly related to the current task.
+Avoid making changes that could affect other sections of the project; update only what is necessary.
+
+Modern and Updated Design
+Always follow the latest UI/UX standards in design.
+Use up-to-date trends in color palettes, typography, buttons, and user flow.
+Prioritize user experience (UX), and adhere to accessibility and usability principles.
+
+Error-Free Coding Priority
+Your primary goal must always be writing safe and error-free code.
+Ensure that code is checked with static analysis tools before it is compiled or run.
+Anticipate possible errors in advance and prioritize stability and reliability in the code.
+
+Automated and Continuous Code Generation
+There is no need to wait for approval during code generation; write long and comprehensive code without interruption.
+Generate the entire solution as a whole, and avoid unnecessary fragmentation.
+
+Project Integrity and Seamless Functionality
+Always take a holistic view of the project; ensure all components function properly and integrate smoothly.
+Make sure your code and design are compatible with the overall project architecture.
+Test the overall operation of the project after every change.
+
+Modern and Correct Methods
+Always use up-to-date, secure, and accurate methods in both coding and design.
+Avoid outdated or discouraged practices; prefer modern frameworks and libraries.
+Ensure the code is maintainable and easy to update.
+
+Cross-Platform Compatibility
+The project must function flawlessly on both web and mobile platforms.
+Comply with responsive design principles; test on different screen sizes and devices.
+Apply platform-specific optimizations to maximize the user experience in all environments.
+
+Language and Communication
+Always speak and write in Turkish.
+All code comments, error messages, and user-facing texts must be in Turkish.
+Use Turkish for internal team communication as well.
+
+Project-Wide Error Pattern Correction
+When you encounter an error or are informed about one, analyze the entire project.
+Identify and fix all other parts of the codebase that are likely to cause the same or similar error.
+Apply consistent corrections across the project to ensure the issue does not reoccur elsewhere.
+
+

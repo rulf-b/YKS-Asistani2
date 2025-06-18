@@ -1,213 +1,273 @@
 {% extends "layout.html" %}
+
+{% block title %}Ana Sayfa{% endblock %}
+
 {% block content %}
-<div class="container">
-    <div class="px-4 py-5 text-center">
-        <h1 class="display-5 fw-bold">
-            {% if user %}
-                Merhaba, {{ user.username }}! 👋
-            {% else %}
-                Hoş geldiniz! 👋
-            {% endif %}
-        </h1>
-        <div class="col-lg-8 mx-auto">
-            <p class="lead mb-4 text-muted">YKS Asistanı panona hoş geldin. Hedeflerine bir adım daha yaklaşmak için bugün ne yapmak istersin?</p>
-            {% if hedef %}
-                <div class="alert alert-success" role="alert">
-                    <h4 class="alert-heading"><i class="bi bi-bullseye me-2"></i> Hedefin:</h4>
-                    <p class="mb-0 fs-5"><strong>{{ hedef.universite }} - {{ hedef.bolum }}</strong></p>
-                    <hr>
-                    <a href="/hedef_analizi" class="btn btn-success"><i class="bi bi-graph-up-arrow me-2"></i> Detaylı Hedef Analizimi Görüntüle</a>
-                    
-                    {# YENİ: İlerleme Çubukları/Göstergeler #}
-                    <div class="mt-4">
-                        <h5 class="fw-bold text-dark mb-3">Hedef İlerlemen:</h5>
-                        <div class="mb-2">
-                            <label class="form-label">TYT Net İlerlemesi (Hedef: {{ hedef.hedef_tyt_net | round(2) }})</label>
-                            <div class="progress" style="height: 25px;">
-                                <div class="progress-bar bg-primary" role="progressbar" 
-                                     style="width: {{ tyt_ilerleme_yuzde }}%;" 
-                                     aria-valuenow="{{ tyt_ilerleme_yuzde }}" aria-valuemin="0" aria-valuemax="100">
-                                    {{ current_user_tyt_net | default(0) | round(2) }} Net (%{{ tyt_ilerleme_yuzde | round(1) }})
-                                </div>
-                            </div>
+<div class="container-fluid px-lg-5 py-5">
+    <!-- Hoş Geldin Kartı -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card border-0 bg-dark text-white overflow-hidden position-relative" data-aos="fade-up">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <h1 class="display-4 fw-bold mb-4">Merhaba, {{ current_user.username }}</h1>
+                            <p class="lead mb-4">Bugün hedeflerine ulaşmak için harika bir gün. Çalışmalarına devam et ve başarıya bir adım daha yaklaş.</p>
+                            <a href="{{ url_for('calisma_takibi') }}" class="btn btn-light">Çalışmaya Başla</a>
                         </div>
-                        <div class="mb-2">
-                            <label class="form-label">AYT Net İlerlemesi (Hedef: {{ hedef.hedef_ayt_net | round(2) }})</label>
-                            <div class="progress" style="height: 25px;">
-                                <div class="progress-bar bg-info" role="progressbar" 
-                                     style="width: {{ ayt_ilerleme_yuzde }}%;" 
-                                     aria-valuenow="{{ ayt_ilerleme_yuzde }}" aria-valuemin="0" aria-valuemax="100">
-                                    {{ current_user_ayt_net | default(0) | round(2) }} Net (%{{ ayt_ilerleme_yuzde | round(1) }})
-                                </div>
+                        <div class="col-lg-4 d-none d-lg-block">
+                            <div class="position-absolute top-50 end-0 translate-middle-y pe-5">
+                                <i class="bi bi-mortarboard-fill display-1 text-white-50"></i>
                             </div>
                         </div>
                     </div>
-
                 </div>
-            {% else %}
-                <div class="alert alert-warning">
-                    <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i> Henüz bir hedefin yok!</h4>
-                    <p>Motivasyonunu artırmak ve yol haritanı çizmek için hemen bir hedef belirle.</p>
-                    <a href="/hedef_belirle" class="btn btn-warning"><i class="bi bi-pin-map-fill me-2"></i> Hemen Hedef Belirle</a>
-                </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 
-    {# YENİ: Özet Kartlar #}
+    <!-- İstatistik Kartları -->
     <div class="row g-4 mb-5">
-        <div class="col-lg-4 col-md-6">
-            <div class="card h-100 shadow-sm text-center bg-primary text-white" style="background-color: var(--primary-dark) !important;">
-                <div class="card-body d-flex flex-column justify-content-center">
-                    <i class="bi bi-stopwatch-fill display-4 mb-3"></i>
-                    <h5 class="card-title fw-bold">Toplam Çalışma Süresi</h5>
-                    <p class="card-text fs-2 mb-0">{{ toplam_calisma_suresi_saat | round(1) }} saat</p>
-                    <small class="text-white-50 mt-1">({{ toplam_calisma_suresi_dakika }} dakika)</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <div class="card h-100 shadow-sm text-center bg-success text-white" style="background-color: var(--success-soft) !important;">
-                <div class="card-body d-flex flex-column justify-content-center">
-                    <i class="bi bi-question-circle-fill display-4 mb-3"></i>
-                    <h5 class="card-title fw-bold">Analiz Edilen Toplam Soru</h5>
-                    <p class="card-text fs-2 mb-0">{{ toplam_analiz_edilen_soru }} adet</p>
-                    <small class="text-white-50 mt-1">Yapay zeka ile</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-12">
-            <div class="card h-100 shadow-sm text-center bg-warning text-dark" style="background-color: var(--warning-soft) !important;">
-                <div class="card-body d-flex flex-column justify-content-center">
-                    <i class="bi bi-exclamation-octagon-fill display-4 mb-3"></i>
-                    <h5 class="card-title fw-bold">Eksik Konu Sayısı</h5>
-                    <p class="card-text fs-2 mb-0">{{ tekrar_konu_sayisi }} adet</p>
-                    <small class="text-dark-50 mt-1">Tekrar listende bekliyor</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <div class="row g-4 mb-5">
-        <div class="col-lg-6">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title text-primary"><i class="bi bi-search me-2"></i> Son Soru Analizlerin</h5>
-                    {% if analizler %}
-                        <ul class="list-group list-group-flush border-0">
-                            {% for analiz in analizler %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
-                                    <span class="text-truncate">{{ analiz.soru_metni[:60] }}...</span> 
-                                    <small class="text-muted ms-auto">({{ analiz.tarih.strftime('%d %b') }})</small>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        {# YENİ: Boş Durum Tasarımı #}
-                        <div class="text-center my-4 p-4 text-muted">
-                            <i class="bi bi-exclamation-circle-fill display-4 mb-3"></i>
-                            <p class="card-text">Henüz analiz edilmiş soru yok.</p>
-                            <p class="fw-bold">Hemen ilk analizi yap, YKS'ye bir adım önde başla!</p>
-                        </div>
-                    {% endif %}
-                    <a href="/soru-analizi" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Yeni Soru Analizi Yap</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title text-primary"><i class="bi bi-bar-chart-line-fill me-2"></i> Son Denemelerin</h5>
-                    {% if denemeler %}
-                        <ul class="list-group list-group-flush border-0">
-                            {% for deneme in denemeler %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
-                                    <span class="text-truncate">{{ deneme.kaynak }}</span> 
-                                    <small class="text-muted ms-auto">({{ deneme.tarih.strftime('%d %b') }})</small>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        {# YENİ: Boş Durum Tasarımı #}
-                        <div class="text-center my-4 p-4 text-muted">
-                            <i class="bi bi-bar-chart-fill display-4 mb-3"></i>
-                            <p class="card-text">Henüz kaydedilmiş deneme yok.</p>
-                            <p class="fw-bold">Performansını takip etmek için ilk denemeni ekle!</p>
-                        </div>
-                    {% endif %}
-                     <a href="/deneme_takibi" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Yeni Deneme Ekle</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row g-4 mb-5">
-        <div class="col-lg-6">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title text-primary"><i class="bi bi-clock-fill me-2"></i> Son Çalışma Oturumların</h5>
-                    {% if calisma_oturumleri %}
-                        <ul class="list-group list-group-flush border-0">
-                            {% for oturum in calisma_oturumleri %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
-                                    <span class="text-truncate">{{ oturum.konu_adi if oturum.konum_adi else 'Belirtilmedi' }} ({{ oturum.calisma_suresi_dakika }} dk)</span> 
-                                    <small class="text-muted ms-auto">({{ oturum.tarih.strftime('%d %b') }})</small>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        {# YENİ: Boş Durum Tasarımı #}
-                        <div class="text-center my-4 p-4 text-muted">
-                            <i class="bi bi-clock-history display-4 mb-3"></i>
-                            <p class="card-text">Henüz kaydedilmiş bir çalışma oturumu yok.</p>
-                            <p class="fw-bold">Çalışma alışkanlıklarını takip etmeye başla!</p>
-                        </div>
-                    {% endif %}
-                    <a href="/calisma_takibi" class="btn btn-outline-primary mt-auto"><i class="bi bi-plus-circle me-2"></i> Çalışma Oturumu Ekle</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-             <div class="card h-100 shadow-sm text-center">
-                <div class="card-body d-flex flex-column justify-content-center">
-                     <h5 class="card-title text-warning mb-3"><i class="bi bi-lightbulb-fill me-2"></i> Eksiklerini Gider</h5>
-                     <p class="card-text fs-6 text-muted mb-4">Bilgi eksikliği yaşadığın **{{tekrar_konu_sayisi}}** konu tekrar listende seni bekliyor. Hemen bir quiz çözerek kendini test et ve eksiklerini kapat!</p>
-                     <a href="/mini_quiz" class="btn btn-warning btn-lg mt-auto"><i class="bi bi-card-checklist me-2"></i> Mini Quiz Başlat</a>
-                </div>
-             </div>
-        </div>
-    </div>
-
-    <!-- Grafikler Row -->
-    <div class="row g-4 mb-5 fade-in" data-aos="fade-up">
-        <div class="col-lg-6">
-            <div class="card shadow-sm">
+        <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="100">
+            <div class="card border-0 h-100">
                 <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-bar-chart-fill me-2"></i> Haftalık Çalışma Süresi</h5>
-                    <canvas id="studyChart" height="200"></canvas>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-wrapper bg-primary-soft text-primary">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                        <span class="text-muted">Bugün</span>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ daily_study_time }}</h3>
+                    <p class="text-muted mb-0">Çalışma Süresi</p>
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
-            <div class="card shadow-sm">
+        
+        <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="200">
+            <div class="card border-0 h-100">
                 <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-pie-chart-fill me-2"></i> Net İlerlemesi</h5>
-                    <canvas id="netChart" height="200"></canvas>
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-wrapper bg-success-soft text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <span class="text-muted">Bu Hafta</span>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ completed_tasks }}</h3>
+                    <p class="text-muted mb-0">Tamamlanan Görev</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="300">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-wrapper bg-warning-soft text-warning">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <span class="text-muted">Ortalama</span>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ average_score }}</h3>
+                    <p class="text-muted mb-0">Deneme Puanı</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="400">
+            <div class="card border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="icon-wrapper bg-danger-soft text-danger">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <span class="text-muted">Kalan</span>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ days_until_exam }}</h3>
+                    <p class="text-muted mb-0">Gün</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Günlük Hedefler ve Çalışma Önerileri -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8" data-aos="fade-up" data-aos-delay="100">
+            <div class="card border-0 h-100">
+                <div class="card-header border-0 bg-transparent">
+                    <h5 class="fw-bold mb-0">Günlük Hedefler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Ders</th>
+                                    <th>Hedef</th>
+                                    <th>İlerleme</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for goal in daily_goals %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="icon-wrapper bg-{{ goal.color }}-soft text-{{ goal.color }} small">
+                                                <i class="bi bi-book"></i>
+                                            </div>
+                                            <span>{{ goal.subject }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ goal.target }}</td>
+                                    <td style="width: 40%;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="progress w-100" style="height: 6px;">
+                                                <div class="progress-bar bg-{{ goal.color }}" role="progressbar" style="width: {{ goal.progress }}%"></div>
+                                            </div>
+                                            <span class="text-muted small">{{ goal.progress }}%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if goal.status == 'completed' %}
+                                            <span class="badge bg-success-soft text-success">Tamamlandı</span>
+                                        {% elif goal.status == 'in_progress' %}
+                                            <span class="badge bg-warning-soft text-warning">Devam Ediyor</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-soft text-danger">Başlanmadı</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+            <div class="card border-0 h-100">
+                <div class="card-header border-0 bg-transparent">
+                    <h5 class="fw-bold mb-0">Çalışma Önerileri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column gap-3">
+                        {% for suggestion in study_suggestions %}
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="icon-wrapper bg-{{ suggestion.color }}-soft text-{{ suggestion.color }}">
+                                <i class="bi bi-lightbulb"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ suggestion.title }}</h6>
+                                <p class="text-muted mb-0">{{ suggestion.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deneme Sonuçları Grafiği -->
+    <div class="row" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-12">
+            <div class="card border-0">
+                <div class="card-header border-0 bg-transparent">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="fw-bold mb-0">Deneme Sonuçları</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-icon" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#">Son 7 Gün</a></li>
+                                <li><a class="dropdown-item" href="#">Son 30 Gün</a></li>
+                                <li><a class="dropdown-item" href="#">Tüm Zamanlar</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="examResultsChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock content %}
+{% endblock %}
 
-{# --- Grafikler --- #}
-{% block extra_scripts %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Haftalık çalışma verileri (dakika) - henüz gerçek zamanlı değil
-    window.weekData = {{ haftalik_calisma | default([0,0,0,0,0,0,0]) }};
-    // Net ilerlemeleri
-    window.netData = [{{ current_user_tyt_net | default(0) }}, {{ current_user_ayt_net | default(0) }}];
+document.addEventListener('DOMContentLoaded', function() {
+    // Grafik verilerini hazırla
+    const data = {
+        labels: {{ exam_dates|tojson }},
+        datasets: [
+            {
+                label: 'TYT',
+                data: {{ tyt_scores|tojson }},
+                borderColor: '#0066FF',
+                backgroundColor: 'rgba(0, 102, 255, 0.1)',
+                tension: 0.4,
+                fill: true
+            },
+            {
+                label: 'AYT',
+                data: {{ ayt_scores|tojson }},
+                borderColor: '#00C853',
+                backgroundColor: 'rgba(0, 200, 83, 0.1)',
+                tension: 0.4,
+                fill: true
+            }
+        ]
+    };
+
+    // Grafik ayarları
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    usePointStyle: true,
+                    padding: 20
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    display: true,
+                    drawBorder: false
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        },
+        elements: {
+            point: {
+                radius: 4,
+                hoverRadius: 6
+            }
+        }
+    };
+
+    // Grafiği oluştur
+    const ctx = document.getElementById('examResultsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: options
+    });
+});
 </script>
-<script src="/static/js/dashboard.js"></script>
-{% endblock extra_scripts %}
+{% endblock %}

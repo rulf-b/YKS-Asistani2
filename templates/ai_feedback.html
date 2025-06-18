@@ -5,7 +5,7 @@
 
     <div class="card shadow-sm p-4"> {# Buradaki p-4 kartın iç boşluğunu ayarlar #}
         <div class="card-body" style="white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.8; color: var(--text-dark);">
-            {{ feedback_report|markdown }}
+            {{ safe_feedback_report|safe }}
         </div>
     </div>
 
