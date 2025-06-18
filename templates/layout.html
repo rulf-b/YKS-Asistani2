@@ -361,6 +361,32 @@
                 white-space: nowrap; /* Hücre içeriğinin tek satırda kalmasını sağlar */
             }
         }
+
+        /* Başa Dön Butonu */
+        #backToTop {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: var(--primary-soft);
+            color: #fff;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1040;
+        }
+
+        #backToTop.show {
+            display: flex;
+        }
+
+        #backToTop:hover {
+            background-color: var(--primary-dark);
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -417,6 +443,9 @@
     <main class="container">
         {% block content %}{% endblock content %}
     </main>
+    <button id="backToTop" class="btn" aria-label="Başa dön">
+        <i class="bi bi-arrow-up"></i>
+    </button>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
