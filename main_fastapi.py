@@ -4,10 +4,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Float, Text, ForeignKey
-from sqlalchemy.orm import sessionmaker, Session, relationship
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import func
+try:
+    from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Float, Text, ForeignKey
+    from sqlalchemy.orm import sessionmaker, Session, relationship
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.sql import func
+except ImportError as e:
+    raise SystemExit(
+        "Gerekli kütüphaneler yüklü değil. 'pip install -r requirements.txt' komutunu çalıştırın." 
+    ) from e
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Optional, List
